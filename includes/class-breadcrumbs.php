@@ -118,6 +118,21 @@ class Breadcrumbs {
 			return '';
 		}
 
+		return self::render_trail( $trail, $args );
+	}
+
+	/**
+	 * Render a trail somebody hands us.
+	 *
+	 * Split out from render() so the settings screen can show what the
+	 * settings produce without pretending to be on a page of the site. It
+	 * also makes the renderer testable, which it was not.
+	 *
+	 * @param array $trail Trail entries.
+	 * @param array $args  Keys: separator, prefix.
+	 * @return string
+	 */
+	public static function render_trail( array $trail, $args = array() ) {
 		$args = wp_parse_args(
 			$args,
 			array(
@@ -141,7 +156,53 @@ class Breadcrumbs {
 		$separator = ' <span class="solseo-breadcrumb-separator">' . esc_html( $args['separator'] ) . '</span> ';
 		$inside    = $args['prefix'] ? '<span class="solseo-breadcrumb-prefix">' . esc_html( $args['prefix'] ) . '</span> ' : '';
 
+		/*
+		 * The settings preview needs the span to exist even when it is empty,
+		 * so it has something to fill in as somebody types. Nothing on the
+		 * front of the site asks for this.
+		 */
+		if ( '' === $inside && ! empty( $args['prefix_always'] ) ) {
+			$inside = '<span class="solseo-breadcrumb-prefix" hidden></span> ';
+		}
+
 		return '<nav class="solseo-breadcrumbs" aria-label="' . esc_attr__( 'Breadcrumb', 'solseo' ) . '">' . $inside . implode( $separator, $parts ) . '</nav>';
+	}
+
+	/**
+	 * A trail made up for the settings screen.
+	 *
+	 * Uses this site's newest published page for the last crumb, so the
+	 * preview reads like this site rather than like an example.
+	 *
+	 * @return array
+	 */
+	public static function sample_trail() {
+		$home  = Options::get( 'breadcrumbs_home' );
+		$trail = array(
+			array(
+				'label' => $home ? $home : __( 'Home', 'solseo' ),
+				'url'   => home_url( '/' ),
+			),
+			array(
+				'label' => __( 'A section', 'solseo' ),
+				'url'   => home_url( '/a-section/' ),
+			),
+		);
+
+		$newest = get_posts(
+			array(
+				'numberposts' => 1,
+				'post_type'   => solseo_post_types(),
+				'post_status' => 'publish',
+			)
+		);
+
+		$trail[] = array(
+			'label' => $newest && $newest[0]->post_title ? $newest[0]->post_title : __( 'The page somebody is on', 'solseo' ),
+			'url'   => '',
+		);
+
+		return $trail;
 	}
 
 	/**

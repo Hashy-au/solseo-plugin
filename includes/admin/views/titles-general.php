@@ -93,8 +93,8 @@ $options = $data['options'];
 	<tr>
 		<th scope="row"><label for="solseo-profiles"><?php esc_html_e( 'Profiles elsewhere', 'solseo' ); ?></label></th>
 		<td>
-			<textarea class="large-text code" rows="4" id="solseo-profiles" name="solseo[entity_profiles]"><?php echo esc_textarea( implode( "\n", (array) $options['entity_profiles'] ) ); ?></textarea>
-			<p class="description"><?php esc_html_e( 'One address per line. These tell a search engine that the same business is behind each profile.', 'solseo' ); ?></p>
+			<textarea class="large-text code" rows="4" id="solseo-profiles" name="solseo[entity_profiles]" placeholder="https://www.facebook.com/yourbusiness&#10;https://www.instagram.com/yourbusiness&#10;https://www.youtube.com/@yourbusiness&#10;https://au.linkedin.com/company/yourbusiness"><?php echo esc_textarea( implode( "\n", (array) $options['entity_profiles'] ) ); ?></textarea>
+			<p class="description"><?php esc_html_e( 'One address per line, starting with https://. These tell a search engine that the same business is behind each profile.', 'solseo' ); ?></p>
 		</td>
 	</tr>
 </table>
@@ -115,6 +115,7 @@ $options = $data['options'];
 					'<code>&lt;?php solseo_breadcrumbs(); ?&gt;</code>'
 				);
 				?>
+				<button type="button" class="button-link solseo-copy" data-copy="[solseo_breadcrumbs]"><?php esc_html_e( 'Copy the shortcode', 'solseo' ); ?></button>
 			</p>
 		</td>
 	</tr>
@@ -123,7 +124,34 @@ $options = $data['options'];
 		<td><input type="text" class="regular-text" id="solseo-crumb-home" name="solseo[breadcrumbs_home]" value="<?php echo esc_attr( $options['breadcrumbs_home'] ); ?>" placeholder="<?php esc_attr_e( 'Home', 'solseo' ); ?>"></td>
 	</tr>
 	<tr>
+		<th scope="row"><label for="solseo-crumb-prefix"><?php esc_html_e( 'Words before the trail', 'solseo' ); ?></label></th>
+		<td>
+			<input type="text" class="regular-text" id="solseo-crumb-prefix" name="solseo[breadcrumbs_prefix]" value="<?php echo esc_attr( $options['breadcrumbs_prefix'] ); ?>" placeholder="<?php esc_attr_e( 'You are here:', 'solseo' ); ?>">
+			<p class="description"><?php esc_html_e( 'Printed once, before the first crumb. Leave it empty for no words at all.', 'solseo' ); ?></p>
+		</td>
+	</tr>
+	<tr>
 		<th scope="row"><label for="solseo-crumb-sep"><?php esc_html_e( 'Separator', 'solseo' ); ?></label></th>
 		<td><input type="text" class="small-text" id="solseo-crumb-sep" name="solseo[breadcrumbs_sep]" value="<?php echo esc_attr( $options['breadcrumbs_sep'] ); ?>"></td>
+	</tr>
+	<tr>
+		<th scope="row"><?php esc_html_e( 'How it will look', 'solseo' ); ?></th>
+		<td>
+			<div class="solseo-preview<?php echo $options['breadcrumbs_enabled'] ? '' : ' solseo-preview-off'; ?>">
+				<?php
+				echo wp_kses_post(
+					\SolSEO\Breadcrumbs::render_trail(
+						\SolSEO\Breadcrumbs::sample_trail(),
+						array(
+							'separator'     => $options['breadcrumbs_sep'],
+							'prefix'        => $options['breadcrumbs_prefix'],
+							'prefix_always' => true,
+						)
+					)
+				);
+				?>
+			</div>
+			<p class="description"><?php esc_html_e( 'Made up from this site, and it follows the three fields above as you type them.', 'solseo' ); ?></p>
+		</td>
 	</tr>
 </table>

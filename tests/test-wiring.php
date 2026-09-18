@@ -81,3 +81,55 @@ foreach ( array_keys( \SolSEO\Admin\Menu::screens() ) as $slug ) {
 
 	solseo_assert( '' !== $view, 'screen ' . $slug . ' has a slug' );
 }
+
+/*
+ * THE TWO SEAMS THE ADD-ON HOOKS. An add-on ships and updates separately, so a
+ * seam quietly renamed here is a paid feature that stops appearing on
+ * somebody's site with nothing in any log to say why.
+ */
+$solseo_dashboard_src = (string) file_get_contents( SOLSEO_PATH . 'includes/admin/class-dashboard-screen.php' );
+
+solseo_assert(
+	false !== strpos( $solseo_dashboard_src, "do_action( 'solseo_dashboard_panels' )" ),
+	'the dashboard offers a place to add a panel'
+);
+
+$solseo_connection_src = (string) file_get_contents( SOLSEO_PATH . 'includes/hub/class-connection.php' );
+
+solseo_assert(
+	false !== strpos( $solseo_connection_src, "do_action( 'solseo_hub_synced', self::summary() )" ),
+	'a finished sync says so'
+);
+
+solseo_assert(
+	false !== strpos( $solseo_connection_src, "do_action( 'solseo_hub_disconnected' )" ),
+	'and so does losing the connection'
+);
+
+/*
+ * AND IT HANDS OVER summary(), WHICH IS THE STORED CONNECTION WITHOUT THE KEY.
+ * A hook is a public address: anything at all can subscribe to it and send what
+ * it is given anywhere it likes. $stored holds the pairing key.
+ */
+solseo_assert(
+	false === strpos( $solseo_connection_src, "do_action( 'solseo_hub_synced', \$stored" ),
+	'and it never hands the key to whatever is listening'
+);
+
+/*
+ * SITE HEALTH IS REGISTERED OUTSIDE THE ADMIN BRANCH. WordPress runs the direct
+ * tests from a weekly cron event to fill the count on its own dashboard widget,
+ * and that request is not an admin request. Registered inside the branch, the
+ * tests exist on the screen and the widget counts nothing.
+ */
+$solseo_boot = (string) file_get_contents( SOLSEO_PATH . 'includes/class-plugin.php' );
+
+solseo_assert(
+	false !== strpos( $solseo_boot, 'Health\Site_Health::init()' ),
+	'Site Health is booted'
+);
+
+solseo_assert(
+	strpos( $solseo_boot, 'Health\Site_Health::init()' ) < strpos( $solseo_boot, 'if ( is_admin() ) {' ),
+	'and it is booted before the admin branch, because a cron request is not an admin request'
+);

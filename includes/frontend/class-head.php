@@ -55,8 +55,30 @@ class Head {
 	 * @return string
 	 */
 	public static function title() {
-		$context = Context::current();
+		return self::title_in( Context::current() );
+	}
 
+	/**
+	 * The title one post would print, asked outside the loop.
+	 *
+	 * The template, the variables and the fallbacks are the ones that run on
+	 * the page itself, because an answer worked out a second way is an answer
+	 * that will disagree with the page eventually.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	public static function title_for( $post_id ) {
+		return self::title_in( Context::for_post( (int) $post_id ) );
+	}
+
+	/**
+	 * The title for a context.
+	 *
+	 * @param array $context View context.
+	 * @return string
+	 */
+	protected static function title_in( array $context ) {
 		if ( 'singular' === $context['type'] || 'blog_home' === $context['type'] || ( 'front_page' === $context['type'] && $context['object_id'] ) ) {
 			$stored = Meta::get( $context['object_id'], 'title' );
 
@@ -82,8 +104,30 @@ class Head {
 	 * @return string
 	 */
 	public static function description() {
-		$context = Context::current();
+		return self::description_in( Context::current() );
+	}
 
+	/**
+	 * The description one post would print, asked outside the loop.
+	 *
+	 * CLIPPED THE WAY render() CLIPS IT, at 320 characters, because the point
+	 * of asking is to compare what the page prints with what a search engine
+	 * will show, and the unclipped string is neither.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	public static function description_for( $post_id ) {
+		return self::clip( self::description_in( Context::for_post( (int) $post_id ) ), 320 );
+	}
+
+	/**
+	 * The description for a context.
+	 *
+	 * @param array $context View context.
+	 * @return string
+	 */
+	protected static function description_in( array $context ) {
 		if ( $context['object_id'] && 'term' !== $context['type'] ) {
 			$stored = Meta::get( $context['object_id'], 'description' );
 
@@ -226,16 +270,94 @@ class Head {
 		}
 
 		if ( 'term' === $context['type'] ) {
-			return Meta::get_term( $context['object_id'], 'robots_noindex' )
-				|| ! empty( Options::taxonomy( $context['taxonomy'] )['noindex'] );
+			return '' !== self::noindex_source(
+				Meta::get_term( $context['object_id'], 'robots_noindex' ),
+				! empty( Options::taxonomy( $context['taxonomy'] )['noindex'] ),
+				false
+			);
 		}
 
 		if ( $context['object_id'] ) {
-			return Meta::get( $context['object_id'], 'robots_noindex' )
-				|| ! empty( Options::post_type( $context['post_type'] )['noindex'] );
+			return '' !== self::noindex_source(
+				Meta::get( $context['object_id'], 'robots_noindex' ),
+				! empty( Options::post_type( $context['post_type'] )['noindex'] ),
+				false
+			);
 		}
 
 		return false;
+	}
+
+	/**
+	 * Why one post is being kept out of the index, or an empty string.
+	 *
+	 * The three answers are three different screens, which is the whole reason
+	 * for naming the source rather than answering yes or no: one is a tick box
+	 * on the page, one is a setting for the whole post type, and one is a
+	 * WordPress setting that has nothing to do with this plugin.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string One of post_meta, post_type, site, or an empty string.
+	 */
+	public static function hidden_reason( $post_id ) {
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return '';
+		}
+
+		$site = ! get_option( 'blog_public' )
+			|| ( (int) get_option( 'page_on_front' ) === (int) $post->ID && Options::get( 'home_noindex' ) );
+
+		return self::noindex_source(
+			Meta::get( $post->ID, 'robots_noindex' ),
+			! empty( Options::post_type( $post->post_type )['noindex'] ),
+			$site
+		);
+	}
+
+	/**
+	 * The same question about a term archive.
+	 *
+	 * A term carries no separate setting from its taxonomy as far as the reader
+	 * is concerned, so both answer taxonomy: the screen that fixes either is
+	 * the same screen.
+	 *
+	 * @param int    $term_id  Term ID.
+	 * @param string $taxonomy Taxonomy name.
+	 * @return string One of taxonomy, site, or an empty string.
+	 */
+	public static function term_hidden_reason( $term_id, $taxonomy ) {
+		$source = self::noindex_source(
+			Meta::get_term( $term_id, 'robots_noindex' ),
+			! empty( Options::taxonomy( $taxonomy )['noindex'] ),
+			! get_option( 'blog_public' )
+		);
+
+		return 'post_meta' === $source || 'post_type' === $source ? 'taxonomy' : $source;
+	}
+
+	/**
+	 * Which of the three settings is doing the hiding.
+	 *
+	 * Pure, and the order is the order the tags are worked out in: the page's
+	 * own setting wins, then the type's, then the site's.
+	 *
+	 * @param mixed $post_meta The object's own setting.
+	 * @param mixed $post_type The setting for its type.
+	 * @param mixed $site      The site wide setting.
+	 * @return string
+	 */
+	public static function noindex_source( $post_meta, $post_type, $site ) {
+		if ( $post_meta ) {
+			return 'post_meta';
+		}
+
+		if ( $post_type ) {
+			return 'post_type';
+		}
+
+		return $site ? 'site' : '';
 	}
 
 	/**

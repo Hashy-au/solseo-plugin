@@ -43,6 +43,55 @@ class Rest {
 				),
 			)
 		);
+
+		/*
+		 * What robots.txt would say, composed by the code that serves it.
+		 *
+		 * The settings screen used to join the two halves of the file around
+		 * the box in the browser, which is fast and wrong: the joining is not
+		 * the composing. Rules meant for every crawler are folded into the
+		 * group WordPress already wrote, and a preview that skips that step
+		 * shows two groups for everybody where one will be served. Nobody
+		 * would have noticed until a crawler read the one we did not mean.
+		 */
+		register_rest_route(
+			self::NAMESPACE_V1,
+			'/robots-preview',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'robots_preview' ),
+				'permission_callback' => array( __CLASS__, 'may_manage' ),
+				'args'                => array(
+					'rules' => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+				),
+			)
+		);
+
+		Admin\Bulk_Edit::register_routes();
+	}
+
+	/**
+	 * Whether the caller looks after this site.
+	 *
+	 * @return bool
+	 */
+	public static function may_manage() {
+		return current_user_can( Admin\Menu::capability() );
+	}
+
+	/**
+	 * Compose robots.txt from rules that have not been saved yet.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function robots_preview( $request ) {
+		$rules = Frontend\Robots_Txt::sanitise_rules( (string) $request->get_param( 'rules' ) );
+
+		return rest_ensure_response( array( 'robots' => Frontend\Robots_Txt::preview( $rules ) ) );
 	}
 
 	/**

@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 class Install {
 
 	/** Bumped when a table changes shape. */
-	const SCHEMA = 1;
+	const SCHEMA = 2;
 
 	/**
 	 * Create the tables, seed the settings and schedule the jobs.
@@ -30,6 +30,13 @@ class Install {
 		if ( ! wp_next_scheduled( 'solseo_daily' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'solseo_daily' );
 		}
+
+		/*
+		 * Record robots.txt as it was before we touched it. This runs again on
+		 * every version change, and the call inside refuses to overwrite, so
+		 * what is kept is always the site as it was on the day we arrived.
+		 */
+		Robots_Backup::snapshot();
 
 		update_option( 'solseo_version', SOLSEO_VERSION, false );
 		update_option( 'solseo_schema', self::SCHEMA, false );
@@ -89,6 +96,27 @@ class Install {
 				PRIMARY KEY  (id),
 				UNIQUE KEY url (url(191)),
 				KEY last_seen (last_seen)
+			) {$charset};"
+		);
+
+		/*
+		 * Which page links to which. The post ID is the join, so the index
+		 * survives a page being renamed. The address is kept beside it so a
+		 * link written before its target existed can be resolved later by the
+		 * daily sweep, and so a link to something that has since gone is still
+		 * a link rather than a missing row.
+		 */
+		dbDelta(
+			"CREATE TABLE {$prefix}solseo_links (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				source_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				target_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				target_url varchar(255) NOT NULL DEFAULT '',
+				link_type varchar(10) NOT NULL DEFAULT 'internal',
+				PRIMARY KEY  (id),
+				KEY source_id (source_id),
+				KEY target_id (target_id),
+				KEY target_url (target_url(191))
 			) {$charset};"
 		);
 	}

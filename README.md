@@ -1,4 +1,4 @@
-# SolSEO
+﻿# SolSEO
 
 A free SEO plugin for WordPress and WooCommerce. Titles, meta, XML sitemaps,
 structured data, redirects and a content score for posts, pages and products.
@@ -41,7 +41,7 @@ WordPress 6.4 or later, PHP 7.4 or later.
 
 ## Download
 
-**[solseo-1.0.0.zip](https://github.com/Hashy-au/solseo-plugin/releases/download/v1.0.0/solseo-1.0.0.zip)**
+**[solseo-1.3.0.zip](https://github.com/Hashy-au/solseo-plugin/releases/download/v1.3.0/solseo-1.3.0.zip)**
 
 In WordPress, go to Plugins, Add New, Upload Plugin, choose the file and
 activate it. It works from the moment it is switched on, with no setup.

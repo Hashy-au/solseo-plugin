@@ -22,26 +22,6 @@ defined( 'ABSPATH' ) || exit;
 class Dashboard_Screen extends Screen {
 
 	/**
-	 * Handle the score everything button.
-	 */
-	public static function load() {
-		if ( ! self::submitted( 'solseo_score_all' ) ) {
-			return;
-		}
-
-		$done = Score_Report::score_missing( 50 );
-
-		self::remember(
-			$done
-				/* translators: %d: number of pages scored. */
-				? sprintf( _n( '%d page scored.', '%d pages scored.', $done, 'solseo' ), $done )
-				: __( 'Everything published has a score.', 'solseo' )
-		);
-
-		self::go_back( Menu::SLUG );
-	}
-
-	/**
 	 * Draw the screen.
 	 */
 	public static function render() {
@@ -79,20 +59,34 @@ class Dashboard_Screen extends Screen {
 			)
 		);
 
+		/**
+		 * Fires inside the dashboard grid, after the cards this plugin draws.
+		 *
+		 * An add-on prints its own `.solseo-card` here. Nothing in this plugin
+		 * listens, and nothing on this screen depends on anything printed.
+		 *
+		 * @since 1.3.0
+		 */
+		do_action( 'solseo_dashboard_panels' );
+
 		echo '</div>';
 	}
 
 	/**
 	 * The handful of site settings worth checking on every visit.
 	 *
-	 * @return array Each entry has label, status and note.
+	 * KEYED, because WordPress's own Site Health screen asks for the same five
+	 * answers one at a time and a numeric index would tie that class to the
+	 * order they happen to be written in here.
+	 *
+	 * @return array Keyed by check. Each entry has label, status and note.
 	 */
 	public static function site_checks() {
 		$checks = array();
 
 		$public = (int) get_option( 'blog_public' );
 
-		$checks[] = array(
+		$checks['search'] = array(
 			'label'  => __( 'Search engines can read the site', 'solseo' ),
 			'status' => $public ? 'good' : 'poor',
 			'note'   => $public
@@ -102,7 +96,7 @@ class Dashboard_Screen extends Screen {
 
 		$permalinks = get_option( 'permalink_structure' );
 
-		$checks[] = array(
+		$checks['permalinks'] = array(
 			'label'  => __( 'Readable addresses', 'solseo' ),
 			'status' => $permalinks ? 'good' : 'poor',
 			'note'   => $permalinks
@@ -112,7 +106,7 @@ class Dashboard_Screen extends Screen {
 
 		$sitemap = Options::get( 'sitemap_enabled' );
 
-		$checks[] = array(
+		$checks['sitemap'] = array(
 			'label'  => __( 'XML sitemap', 'solseo' ),
 			'status' => $sitemap ? 'good' : 'fair',
 			'note'   => $sitemap
@@ -120,7 +114,7 @@ class Dashboard_Screen extends Screen {
 				: __( 'The sitemap is switched off.', 'solseo' ),
 		);
 
-		$checks[] = array(
+		$checks['schema'] = array(
 			'label'  => __( 'Structured data', 'solseo' ),
 			'status' => Options::get( 'schema_enabled' ) ? 'good' : 'fair',
 			'note'   => Options::get( 'entity_name' )
@@ -128,7 +122,7 @@ class Dashboard_Screen extends Screen {
 				: __( 'Set the organisation name under Titles and Meta so the markup is complete.', 'solseo' ),
 		);
 
-		$checks[] = array(
+		$checks['https'] = array(
 			'label'  => __( 'Site address uses HTTPS', 'solseo' ),
 			'status' => 0 === strpos( home_url(), 'https://' ) ? 'good' : 'poor',
 			'note'   => 0 === strpos( home_url(), 'https://' )

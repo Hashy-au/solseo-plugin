@@ -16,7 +16,7 @@ $backslash = [char]92
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 
-foreach ($item in @('solseo.php', 'uninstall.php', 'readme.txt', 'includes', 'assets', 'languages')) {
+foreach ($item in @('solseo.php', 'uninstall.php', 'readme.txt', 'LICENSE', 'includes', 'assets', 'languages')) {
 	$source = Join-Path $here $item
 	if (Test-Path $source) {
 		Copy-Item -Recurse -Force $source (Join-Path $target $item)

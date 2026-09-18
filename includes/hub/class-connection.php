@@ -112,6 +112,17 @@ class Connection {
 		delete_option( self::OPTION );
 		delete_transient( 'solseo_hub_overview' );
 		wp_clear_scheduled_hook( 'solseo_hub_sync' );
+
+		/**
+		 * Fires when this site stops being connected, however that happened.
+		 *
+		 * A refused key disconnects the site inside sync(), so this fires for a
+		 * revoked connection as well as for somebody pressing the button. An add-on
+		 * holding cached account data drops it here.
+		 *
+		 * @since 1.3.0
+		 */
+		do_action( 'solseo_hub_disconnected' );
 	}
 
 	/**
@@ -154,6 +165,19 @@ class Connection {
 		if ( is_array( $overview ) ) {
 			set_transient( 'solseo_hub_overview', $overview, 6 * HOUR_IN_SECONDS );
 		}
+
+		/**
+		 * Fires after a successful sync with the SolSEO service.
+		 *
+		 * What is handed over is summary(), the stored connection WITHOUT the
+		 * key. The key is a credential and a hook is a public address: anything
+		 * subscribing to this can send what it is given anywhere it likes.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param array $connection site_id, url, plan, level, status, checked_at, paired_at.
+		 */
+		do_action( 'solseo_hub_synced', self::summary() );
 	}
 
 	/**

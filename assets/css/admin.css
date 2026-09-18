@@ -547,3 +547,587 @@ td.solseo-wrap {
 		min-width: 100%;
 	}
 }
+
+/* Jobs: the bar, the buttons and the step rail. Added in 1.2.0. */
+
+.solseo-job {
+	margin: 1rem 0 1.5rem;
+}
+
+.solseo-job-buttons {
+	display: flex;
+	gap: .5rem;
+	align-items: center;
+	margin: .75rem 0 .5rem;
+}
+
+.solseo-progress {
+	height: 8px;
+	border-radius: 4px;
+	background: var(--solseo-line);
+	overflow: hidden;
+}
+
+.solseo-progress-bar {
+	display: block;
+	height: 100%;
+	width: 0;
+	background: var(--solseo-accent-fill);
+	transition: width .25s ease;
+}
+
+.solseo-job-status {
+	margin: .5rem 0 .25rem;
+	font-weight: 600;
+}
+
+.solseo-job[data-solseo-job-status="failed"] .solseo-job-status {
+	color: var(--solseo-poor);
+}
+
+.solseo-job-counts {
+	margin: 0;
+}
+
+.solseo-note {
+	background: #f6f7f9;
+	border: 1px solid var(--solseo-line);
+	border-radius: 6px;
+	padding: .9rem 1.1rem;
+	margin: 1rem 0;
+}
+
+.solseo-note h3 {
+	margin-top: 0;
+}
+
+.solseo-handover {
+	border-left: 3px solid var(--solseo-good);
+}
+
+.solseo-failed {
+	margin: .5rem 0 .5rem 1.2rem;
+	list-style: disc;
+}
+
+.solseo-summary {
+	font-size: 1.05rem;
+}
+
+.solseo-disclosure {
+	margin: 1rem 0;
+}
+
+.solseo-disclosure summary {
+	cursor: pointer;
+	padding: .35rem 0;
+	font-weight: 600;
+}
+
+.solseo-source-picker {
+	display: flex;
+	gap: .5rem;
+	flex-wrap: wrap;
+}
+
+.solseo-thumb {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 3px;
+	vertical-align: middle;
+	margin-right: .5rem;
+}
+
+.solseo-image-name {
+	vertical-align: middle;
+}
+
+/* The setup screen. */
+
+.solseo-steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .25rem;
+	list-style: none;
+	margin: 1rem 0 1.5rem;
+	padding: 0;
+	counter-reset: none;
+}
+
+.solseo-step a {
+	display: flex;
+	align-items: center;
+	gap: .4rem;
+	padding: .45rem .8rem;
+	border: 1px solid var(--solseo-line);
+	border-radius: 4px;
+	background: #fff;
+	color: var(--solseo-muted);
+	text-decoration: none;
+}
+
+.solseo-step-number {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.4rem;
+	height: 1.4rem;
+	border-radius: 50%;
+	background: var(--solseo-line);
+	font-size: .75rem;
+	font-weight: 700;
+	color: var(--solseo-ink);
+}
+
+.solseo-step.is-current a {
+	border-color: var(--solseo-accent);
+	color: var(--solseo-ink);
+	font-weight: 600;
+}
+
+.solseo-step.is-current .solseo-step-number {
+	background: var(--solseo-accent);
+	color: #fff;
+}
+
+.solseo-step.is-done .solseo-step-number {
+	background: var(--solseo-good);
+	color: #fff;
+}
+
+.solseo-setup-buttons {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-top: 1.25rem;
+}
+
+.solseo-separator {
+	display: inline-flex;
+	align-items: center;
+	gap: .3rem;
+	margin: 0 .9rem .4rem 0;
+}
+
+.solseo-tick {
+	display: inline-flex;
+	align-items: center;
+	gap: .4rem;
+	margin: 0 0 .3rem;
+}
+
+/* The robots.txt screen. */
+
+.solseo-pre {
+	background: #f6f7f9;
+	border: 1px solid var(--solseo-line);
+	border-radius: 4px;
+	padding: .8rem 1rem;
+	overflow: auto;
+	max-height: 22rem;
+	white-space: pre-wrap;
+	word-break: break-word;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.solseo-robots-preview {
+	margin-bottom: .35rem;
+}
+
+.solseo-presets {
+	display: grid;
+	grid-template-columns: repeat( auto-fit, minmax( 240px, 1fr ) );
+	gap: 1rem;
+	margin: 1rem 0;
+}
+
+.solseo-preset {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	padding: .9rem 1rem 1rem;
+	border: 1px solid var(--solseo-line);
+	border-radius: 6px;
+	background: #fff;
+}
+
+/*
+ * A WordPress button will not wrap, so a label longer than its column runs
+ * out of the column and over whatever is beside it. These are the widest
+ * labels in the plugin, so they are the ones that found it.
+ */
+.solseo-preset .button {
+	width: 100%;
+	height: auto;
+	min-height: 30px;
+	padding: .35rem .7rem;
+	white-space: normal;
+	line-height: 1.4;
+	text-align: center;
+}
+
+.solseo-preset p {
+	margin: 0;
+}
+
+.solseo-robots-danger {
+	border-left-color: var(--solseo-poor);
+	background: #fdf1f0;
+}
+
+.solseo-preview {
+	background: #fff;
+	border: 1px solid var(--solseo-line);
+	border-radius: 4px;
+	padding: .7rem 1rem;
+	margin: .5rem 0;
+}
+
+.solseo-preview-off {
+	opacity: .5;
+}
+
+@media screen and (max-width: 782px) {
+	.solseo-steps {
+		flex-direction: column;
+	}
+
+	.solseo-presets {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* The editor sidebar and the rich column. Added in 1.2.0. */
+
+.solseo-pin {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 0 6px 0 4px;
+	height: 1.5rem;
+	border-radius: 10px;
+	background: var(--solseo-ring, var(--solseo-none));
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.solseo-pin .solseo-mark {
+	flex: 0 0 auto;
+}
+
+.solseo-pin-score {
+	font-variant-numeric: tabular-nums;
+}
+
+.interface-pinned-items .components-button:has(.solseo-pin) {
+	width: auto;
+	min-width: 32px;
+	padding: 0 3px;
+}
+
+/* Where the score stands, at the top of the panel. */
+
+.solseo-standing {
+	padding: 0 0 1rem;
+	border-bottom: 1px solid var(--solseo-line);
+	margin-bottom: .25rem;
+}
+
+.solseo-standing-score {
+	display: flex;
+	align-items: baseline;
+	gap: .5rem;
+	margin-bottom: .6rem;
+}
+
+.solseo-standing-number {
+	font-size: 2rem;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--solseo-ring, var(--solseo-none));
+	font-variant-numeric: tabular-nums;
+}
+
+.solseo-standing-band {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--solseo-muted);
+}
+
+/* The image picker, laid out down the page rather than across it. */
+
+.solseo-sidebar-image {
+	display: block;
+	margin: 0 0 1rem;
+}
+
+.solseo-sidebar-label {
+	display: block;
+	margin-bottom: .4rem;
+	font-size: 11px;
+	font-weight: 500;
+	text-transform: uppercase;
+	color: #1e1e1e;
+}
+
+.solseo-image-drop {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-height: 120px;
+	padding: .6rem;
+	border: 1px dashed #949494;
+	border-radius: 4px;
+	background: #f6f7f9;
+	cursor: pointer;
+	color: var(--solseo-accent);
+	font-size: 13px;
+	font-weight: 500;
+	text-align: center;
+}
+
+.solseo-image-drop:hover,
+.solseo-image-drop:focus {
+	border-color: var(--solseo-accent);
+	background: #fff;
+}
+
+.solseo-image-drop.has-image {
+	min-height: 0;
+	padding: 0;
+	border-style: solid;
+	border-color: var(--solseo-line);
+	background: #fff;
+}
+
+.solseo-image-drop img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 3px;
+}
+
+.solseo-image-clear {
+	margin-top: .35rem;
+}
+
+.solseo-sidebar-image .description {
+	margin: .2rem 0 0;
+	font-size: 12px;
+	color: var(--solseo-muted);
+}
+
+.solseo-sidebar {
+	padding: 12px 16px 24px;
+}
+
+.solseo-sidebar .solseo-snippet {
+	max-width: 100%;
+	margin-bottom: 1rem;
+}
+
+.solseo-sidebar .components-base-control {
+	margin-bottom: 1.1rem;
+}
+
+.solseo-sidebar .components-base-control__help {
+	margin: .35rem 0 0;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.solseo-sidebar .solseo-gauge {
+	margin: -.75rem 0 1.1rem;
+}
+
+.solseo-sidebar .solseo-fieldset {
+	margin: 0 0 1.1rem;
+	padding: 0;
+	border: 0;
+}
+
+.solseo-sidebar .solseo-fieldset legend {
+	margin-bottom: .4rem;
+	font-size: 11px;
+	font-weight: 500;
+	text-transform: uppercase;
+}
+
+.solseo-collapsible {
+	border-top: 1px solid var(--solseo-line);
+}
+
+.solseo-collapsible-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .5rem;
+	width: 100%;
+	padding: .65rem 0;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	font-weight: 600;
+	text-align: left;
+	color: inherit;
+}
+
+.solseo-collapsible-head::after {
+	content: "";
+	width: .45rem;
+	height: .45rem;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate( 45deg );
+	flex: 0 0 auto;
+}
+
+.solseo-collapsible-head[aria-expanded="true"]::after {
+	transform: rotate( -135deg );
+}
+
+.solseo-collapsible-body {
+	padding-bottom: .9rem;
+}
+
+.solseo-group-count {
+	margin-left: auto;
+	margin-right: .4rem;
+	padding: 1px 8px;
+	border-radius: 9px;
+	background: var(--solseo-ring, var(--solseo-none));
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+/* The column on the posts and products lists. */
+
+.column-solseo_score {
+	width: 24%;
+}
+
+.solseo-cell {
+	font-size: 12px;
+	line-height: 1.6;
+}
+
+.solseo-cell-score {
+	display: flex;
+	align-items: center;
+	gap: .4rem;
+	margin-bottom: .2rem;
+}
+
+.solseo-cell-band {
+	font-weight: 600;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.solseo-cell-line {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.solseo-cell-label {
+	color: var(--solseo-muted);
+}
+
+.solseo-cell-value.is-missing {
+	color: var(--solseo-fair);
+}
+
+.solseo-cell-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 1px;
+	margin-right: .5rem;
+	white-space: nowrap;
+}
+
+.solseo-cell-link .dashicons {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	line-height: 1;
+	color: var(--solseo-muted);
+}
+
+.solseo-cell-edit {
+	margin-top: .5rem;
+	padding: .5rem;
+	border: 1px solid var(--solseo-line);
+	border-radius: 4px;
+	background: #fff;
+}
+
+.solseo-cell-edit input,
+.solseo-cell-edit textarea {
+	margin-bottom: .35rem;
+	font-size: 12px;
+}
+
+.solseo-cell-edit.is-error {
+	border-color: var(--solseo-poor);
+	background: #fdf1f0;
+}
+
+.solseo-cell-edit.is-saved {
+	border-color: var(--solseo-good);
+}
+
+.solseo-bulk-toggle {
+	margin-left: .5rem;
+	padding: 0;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	color: var(--solseo-accent);
+	font-size: 11px;
+	font-weight: 400;
+	text-decoration: underline;
+}
+
+.solseo-bulk-bar {
+	display: flex;
+	gap: .5rem;
+	margin: .75rem 0;
+}
+
+/*
+ * An author rule setting display beats the browser's own [hidden] rule,
+ * so anything given a display here has to say what hidden means as well.
+ */
+.solseo-bulk-bar[hidden],
+.solseo-job-buttons[hidden] {
+	display: none;
+}
+
+.solseo-bulk-message {
+	margin: .75rem 0;
+	padding: .5rem .8rem;
+	border-left: 3px solid var(--solseo-good);
+	background: #f6f7f9;
+}
+
+.solseo-bulk-message.is-error {
+	border-left-color: var(--solseo-poor);
+	background: #fdf1f0;
+}
+
+@media screen and (max-width: 782px) {
+	.column-solseo_score {
+		width: auto;
+	}
+}
+
+.solseo-robots-preview.is-stale {
+	opacity: .55;
+}

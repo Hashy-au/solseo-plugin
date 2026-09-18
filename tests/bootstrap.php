@@ -303,14 +303,54 @@ function get_option( $name, $default = false ) {
 /**
  * Write a site option.
  *
- * @param string $name  Option name.
- * @param mixed  $value Value.
+ * @param string $name     Option name.
+ * @param mixed  $value    Value.
+ * @param mixed  $autoload Unused here.
  * @return bool
  */
-function update_option( $name, $value ) {
+function update_option( $name, $value, $autoload = null ) {
+	unset( $autoload );
+
 	$GLOBALS['solseo_test_options'][ $name ] = $value;
 
 	return true;
+}
+
+/**
+ * Write a site option, but only when there is not one already.
+ *
+ * The refusal is the point: the snapshot of robots.txt leans on it.
+ *
+ * @param string $name     Option name.
+ * @param mixed  $value    Value.
+ * @param string $deprecated Unused.
+ * @param bool   $autoload Unused here.
+ * @return bool Whether anything was written.
+ */
+function add_option( $name, $value, $deprecated = '', $autoload = true ) {
+	unset( $deprecated, $autoload );
+
+	if ( isset( $GLOBALS['solseo_test_options'][ $name ] ) ) {
+		return false;
+	}
+
+	$GLOBALS['solseo_test_options'][ $name ] = $value;
+
+	return true;
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * Forget a site option.
+	 *
+	 * @param string $name Option name.
+	 * @return bool
+	 */
+	function delete_option( $name ) {
+		unset( $GLOBALS['solseo_test_options'][ $name ] );
+
+		return true;
+	}
 }
 
 /**
@@ -418,4 +458,120 @@ function sanitize_text_field( $text ) {
  */
 function wp_unslash( $value ) {
 	return is_string( $value ) ? stripslashes( $value ) : $value;
+}
+
+/**
+ * The site address.
+ *
+ * @param string $path Appended to it.
+ * @return string
+ */
+function site_url( $path = '' ) {
+	return 'https://example.test' . $path;
+}
+
+/**
+ * Drop a trailing slash.
+ *
+ * @param string $value Any string.
+ * @return string
+ */
+function untrailingslashit( $value ) {
+	return rtrim( (string) $value, '/' );
+}
+
+/**
+ * Text that is already valid here.
+ *
+ * @param string $text Any text.
+ * @return string
+ */
+function wp_check_invalid_utf8( $text ) {
+	return (string) $text;
+}
+
+/**
+ * Nothing in the library, under test.
+ *
+ * @param string $url Image address.
+ * @return int
+ */
+function attachment_url_to_postid( $url ) {
+	return isset( $GLOBALS['solseo_test_attachments'][ $url ] ) ? (int) $GLOBALS['solseo_test_attachments'][ $url ] : 0;
+}
+
+if ( ! function_exists( 'current_time' ) ) {
+	/**
+	 * The time, as the database keeps it.
+	 *
+	 * @param string $format Ignored.
+	 * @param bool   $gmt    Ignored.
+	 * @return string
+	 */
+	function current_time( $format = 'mysql', $gmt = 0 ) {
+		unset( $format, $gmt );
+
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+}
+
+/**
+ * Reduce a string to a key.
+ *
+ * @param string $value Any string.
+ * @return string
+ */
+function sanitize_key( $value ) {
+	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) );
+}
+
+/**
+ * A whole number, never negative.
+ *
+ * @param mixed $value Any value.
+ * @return int
+ */
+function absint( $value ) {
+	return abs( (int) $value );
+}
+
+/**
+ * JSON, without the options WordPress adds.
+ *
+ * @param mixed $value Any value.
+ * @return string
+ */
+function wp_json_encode( $value ) {
+	return (string) json_encode( $value ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+}
+
+/**
+ * A number with separators.
+ *
+ * @param float $number   The number.
+ * @param int   $decimals How many decimal places.
+ * @return string
+ */
+function number_format_i18n( $number, $decimals = 0 ) {
+	return number_format( (float) $number, (int) $decimals );
+}
+
+/**
+ * Escape for an attribute.
+ *
+ * @param string $text Any text.
+ * @return string
+ */
+function esc_attr( $text ) {
+	return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+}
+
+/**
+ * Escape for the inside of a textarea.
+ *
+ * @param string $text Any text.
+ * @return string
+ */
+function esc_textarea( $text ) {
+	return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 }

@@ -30,6 +30,20 @@ class Content {
 			return '';
 		}
 
+		/*
+		 * Rendering blocks is the dear part, and on one save it is asked for
+		 * by the scorer, the link index and the head tags. Keyed on the
+		 * content as well as the post, so a save that changes the content
+		 * within one request cannot be answered with what it used to say.
+		 */
+		static $done = array();
+
+		$key = $post->ID . ':' . md5( (string) $post->post_content . '|' . (string) $post->post_excerpt );
+
+		if ( isset( $done[ $key ] ) ) {
+			return $done[ $key ];
+		}
+
 		$html = $post->post_content;
 
 		if ( has_blocks( $html ) ) {
@@ -42,6 +56,8 @@ class Content {
 		if ( 'product' === $post->post_type && $post->post_excerpt ) {
 			$html = wpautop( $post->post_excerpt ) . $html;
 		}
+
+		$done[ $key ] = $html;
 
 		return $html;
 	}

@@ -53,6 +53,8 @@ class Meta {
 	 */
 	public static function register_post_meta() {
 		foreach ( solseo_post_types() as $post_type ) {
+			self::allow_meta_in_rest( $post_type );
+
 			foreach ( self::$fields as $field => $type ) {
 				if ( 'score_summary' === $field ) {
 					continue;
@@ -62,16 +64,83 @@ class Meta {
 					$post_type,
 					self::PREFIX . $field,
 					array(
-						'type'          => self::rest_type( $type ),
-						'single'        => true,
-						'show_in_rest'  => 'list' === $type ? array( 'schema' => array( 'items' => array( 'type' => 'string' ) ) ) : true,
-						'auth_callback' => function () {
-							return current_user_can( 'edit_posts' );
+						'type'              => self::rest_type( $type ),
+						'single'            => true,
+						'show_in_rest'      => 'list' === $type ? array( 'schema' => array( 'items' => array( 'type' => 'string' ) ) ) : true,
+
+						/*
+						 * The editor panel writes these through the REST API,
+						 * which does not go anywhere near Meta::save(). Without
+						 * a sanitiser here, the only cleaning in the plugin
+						 * would be on the path the block editor does not use.
+						 */
+						'sanitize_callback' => function ( $value ) use ( $field ) {
+							return self::sanitise_field( $value, $field );
+						},
+
+						/*
+						 * Whether somebody may edit posts is not the question.
+						 * The question is whether they may edit this one.
+						 */
+						'auth_callback'     => function ( $allowed, $meta_key, $object_id ) {
+							unset( $allowed, $meta_key );
+
+							return current_user_can( 'edit_post', (int) $object_id );
 						},
 					)
 				);
 			}
 		}
+	}
+
+	/**
+	 * Make sure a post type's meta reaches the REST API at all.
+	 *
+	 * The posts controller only puts a meta property in its schema for a post
+	 * type that supports custom fields. Without it the editor panel reads an
+	 * empty object, every edit goes nowhere, and nothing anywhere says so.
+	 * Posts and pages have this support; plenty of custom post types do not.
+	 *
+	 * @param string $post_type Post type name.
+	 */
+	protected static function allow_meta_in_rest( $post_type ) {
+		if ( post_type_supports( $post_type, 'custom-fields' ) ) {
+			return;
+		}
+
+		/**
+		 * Filter whether SolSEO adds custom field support to a post type.
+		 *
+		 * Returning false means the editor panel cannot save on that post
+		 * type, so only turn it off for a type you do not manage.
+		 *
+		 * @param bool   $add       Whether to add it.
+		 * @param string $post_type Post type name.
+		 */
+		if ( ! apply_filters( 'solseo_add_custom_fields_support', true, $post_type ) ) {
+			return;
+		}
+
+		add_post_type_support( $post_type, 'custom-fields' );
+	}
+
+	/**
+	 * Clean one named field, whichever path it arrived by.
+	 *
+	 * @param mixed  $value Raw value.
+	 * @param string $field Field name without the prefix.
+	 * @return mixed
+	 */
+	public static function sanitise_field( $value, $field ) {
+		$type = isset( self::$fields[ $field ] ) ? self::$fields[ $field ] : 'text';
+
+		if ( 'robots_advanced' === $field ) {
+			$list = self::sanitise( $value, 'list' );
+
+			return array_values( array_intersect( $list, array( 'noimageindex', 'noarchive', 'nosnippet', 'notranslate' ) ) );
+		}
+
+		return self::sanitise( $value, $type );
 	}
 
 	/**

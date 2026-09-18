@@ -28,12 +28,30 @@ class Plugin {
 			Sitemaps\Controller::init();
 		}
 
+		/*
+		 * This one is registered on admin requests too. Nothing serves
+		 * robots.txt from wp-admin, so it costs an array entry and changes
+		 * nothing a visitor sees. What it buys is a settings screen that can
+		 * show what is actually being served by running the filter chain that
+		 * serves it, rather than a second copy of the same logic drifting away
+		 * from the first.
+		 */
+		Frontend\Robots_Txt::init();
+		Jobs\Runner::init();
+		Links\Indexer::init();
+
+		/*
+		 * Outside the admin branch on purpose. WordPress runs the direct Site
+		 * Health tests from a weekly cron event to fill the count on its own
+		 * dashboard widget, and that request is not an admin request.
+		 */
+		Health\Site_Health::init();
+
 		if ( is_admin() ) {
 			Admin\Admin::init();
 		} else {
 			Frontend\Head::init();
 			Frontend\Schema::init();
-			Frontend\Robots_Txt::init();
 		}
 
 		add_action( 'rest_api_init', array( __NAMESPACE__ . '\\Rest', 'register_routes' ) );
@@ -50,5 +68,14 @@ class Plugin {
 
 		Install::activate();
 		update_option( 'solseo_version', SOLSEO_VERSION, false );
+
+		/*
+		 * The link table arrives empty on a site that already has pages in it,
+		 * so the first version that has one goes and reads them. It books
+		 * itself a hundred at a time and stops when it runs out.
+		 */
+		if ( ! get_option( 'solseo_links_indexed' ) ) {
+			Links\Indexer::start_backfill( 0 );
+		}
 	}
 }

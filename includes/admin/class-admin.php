@@ -23,6 +23,8 @@ class Admin {
 		Columns::init();
 		Term_Fields::init();
 		Dashboard_Widget::init();
+		Conflict_Notice::init();
+		Editor_Assets::init();
 
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( SOLSEO_FILE ), array( __CLASS__, 'action_links' ) );
@@ -43,21 +45,97 @@ class Admin {
 
 		wp_enqueue_style( 'solseo-admin', SOLSEO_URL . 'assets/css/admin.css', array(), SOLSEO_VERSION );
 
-		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+		if ( false !== strpos( $hook, 'solseo' ) ) {
+			self::settings_assets();
+			self::job_assets();
+		}
+
+		if ( 'index.php' === $hook ) {
+			self::job_assets();
+		}
+
+		if ( 'edit.php' === $hook ) {
+			self::list_assets();
+		}
+
+		/*
+		 * The editor's own scripts are Editor_Assets' job, because which of the
+		 * two surfaces loads is a decision with enough in it to be worth its
+		 * own file.
+		 */
+	}
+
+	/**
+	 * The rich column and the editing it opens up.
+	 */
+	protected static function list_assets() {
+		$screen = get_current_screen();
+
+		if ( ! $screen || ! in_array( $screen->post_type, solseo_post_types(), true ) ) {
 			return;
 		}
 
-		wp_enqueue_script( 'solseo-editor', SOLSEO_URL . 'assets/js/editor.js', array( 'wp-api-fetch' ), SOLSEO_VERSION, true );
+		wp_enqueue_script( 'solseo-list-table', SOLSEO_URL . 'assets/js/list-table.js', array( 'wp-api-fetch' ), SOLSEO_VERSION, true );
 
 		wp_localize_script(
-			'solseo-editor',
-			'solseoEditor',
+			'solseo-list-table',
+			'solseoList',
+			array(
+				'max'     => Bulk_Edit::MAX_ROWS,
+				'strings' => array(
+					'edit'     => __( 'Edit the titles and descriptions on this page', 'solseo' ),
+					'done'     => __( 'Stop editing', 'solseo' ),
+					'save'     => __( 'Save these rows', 'solseo' ),
+					'cancel'   => __( 'Cancel', 'solseo' ),
+					'saving'   => __( 'Saving', 'solseo' ),
+					/* translators: %d: how many rows were saved. */
+					'saved'    => __( '%d saved.', 'solseo' ),
+					/* translators: %d: how many rows could not be saved. */
+					'failed'   => __( '%d could not be saved. They are still here, with what you typed.', 'solseo' ),
+					'nothing'  => __( 'Nothing was changed.', 'solseo' ),
+					'wrong'    => __( 'That did not reach the server. Nothing was saved and nothing was lost.', 'solseo' ),
+					'unsaved'  => __( 'You have unsaved changes in this table.', 'solseo' ),
+					'noRights' => __( 'You are not allowed to edit this one.', 'solseo' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * The live previews, the preset buttons and the copy buttons.
+	 */
+	protected static function settings_assets() {
+		wp_enqueue_script( 'solseo-settings', SOLSEO_URL . 'assets/js/settings.js', array( 'wp-api-fetch' ), SOLSEO_VERSION, true );
+
+		wp_localize_script(
+			'solseo-settings',
+			'solseoSettings',
 			array(
 				'strings' => array(
-					'analysing' => __( 'Working it out', 'solseo' ),
-					'failed'    => __( 'The score could not be worked out just now.', 'solseo' ),
-					/* translators: 1: width of the text in pixels, 2: the width search results allow. */
-					'pixels'    => __( '%1$d of %2$d pixels', 'solseo' ),
+					'copied' => __( 'Copied', 'solseo' ),
+					'home'   => __( 'Home', 'solseo' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * The runner behind anything that works through a list.
+	 */
+	protected static function job_assets() {
+		wp_enqueue_script( 'solseo-jobs', SOLSEO_URL . 'assets/js/jobs.js', array( 'wp-api-fetch' ), SOLSEO_VERSION, true );
+
+		wp_localize_script(
+			'solseo-jobs',
+			'solseoJobs',
+			array(
+				'strings' => array(
+					/* translators: 1: how many are done, 2: how many there are. */
+					'progress'    => __( '%1$s of %2$s done.', 'solseo' ),
+					'carryOn'     => __( 'Carry on', 'solseo' ),
+					'interrupted' => __( 'This stopped part way through. Carry on picks up where it left off.', 'solseo' ),
+					'failed'      => __( 'That did not work. Nothing was left half done, so it is safe to try again.', 'solseo' ),
+					'expired'     => __( 'Your sign in timed out. Reload this page and carry on where it stopped.', 'solseo' ),
 				),
 			)
 		);

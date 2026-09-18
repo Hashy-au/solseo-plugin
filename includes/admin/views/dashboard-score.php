@@ -61,18 +61,26 @@ $bands = $data['summary']['bands'];
 	<?php endif; ?>
 
 	<?php if ( $data['unscored'] ) : ?>
-		<form method="post" class="solseo-inline-form">
-			<?php wp_nonce_field( 'solseo_score_all', '_solseo_nonce' ); ?>
-			<p>
-				<?php
-				printf(
-					/* translators: %d: number of pages with no score yet. */
-					esc_html( _n( '%d published page has never been scored.', '%d published pages have never been scored.', (int) $data['unscored'], 'solseo' ) ),
-					(int) $data['unscored']
-				);
-				?>
-			</p>
-			<button type="submit" class="button"><?php esc_html_e( 'Score the next fifty', 'solseo' ); ?></button>
-		</form>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: number of pages with no score yet. */
+				esc_html( _n( '%s published page has never been scored.', '%s published pages have never been scored.', (int) $data['unscored'], 'solseo' ) ),
+				'<strong>' . esc_html( number_format_i18n( (int) $data['unscored'] ) ) . '</strong>'
+			);
+			?>
+		</p>
+
+		<?php
+		\SolSEO\Admin\Screen::view(
+			'job-progress',
+			array(
+				'job'    => 'score',
+				'start'  => __( 'Score every page that has none', 'solseo' ),
+				'args'   => array( 'scope' => 'missing' ),
+				'reload' => true,
+			)
+		);
+		?>
 	<?php endif; ?>
 </div>

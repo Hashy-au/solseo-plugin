@@ -123,32 +123,127 @@ class Score_Report {
 	}
 
 	/**
-	 * Score every published page that has no score yet.
+	 * How many published pages a run would cover.
 	 *
-	 * @param int $limit How many to work through in one pass.
-	 * @return int How many were scored.
+	 * @param string $scope Either missing or all.
+	 * @return int
 	 */
-	public static function score_missing( $limit = 50 ) {
-		$posts = get_posts(
-			array(
-				'post_type'      => solseo_post_types(),
-				'post_status'    => 'publish',
-				'posts_per_page' => $limit,
-				'fields'         => 'ids',
-				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					array(
-						'key'     => '_solseo_score',
-						'compare' => 'NOT EXISTS',
-					),
-				),
-			)
-		);
+	public static function countable( $scope = 'missing' ) {
+		global $wpdb;
 
-		foreach ( $posts as $post_id ) {
-			Analyser::store( $post_id );
+		if ( 'missing' === $scope ) {
+			return self::unscored();
 		}
 
-		return count( $posts );
+		$types = self::post_types_in();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} p
+			WHERE p.post_status = 'publish'
+			AND p.post_type IN ({$types})"
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * How many published pages have no meta description of their own.
+	 *
+	 * A page with none is not broken: the template fills the gap from the
+	 * excerpt. It is a page whose line in a search result was written by a
+	 * machine rather than by whoever knows what the page is for.
+	 *
+	 * @return int
+	 */
+	public static function missing_description() {
+		global $wpdb;
+
+		$types = self::post_types_in();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_description'
+			WHERE p.post_status = 'publish'
+			AND p.post_type IN ({$types})
+			AND (pm.meta_id IS NULL OR pm.meta_value = '')"
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * How many published pages carry the setting that keeps them out of search.
+	 *
+	 * Meta::save() deletes the row for an empty value, so a row that exists and
+	 * holds 1 is somebody having ticked the box, not a leftover.
+	 *
+	 * @return int
+	 */
+	public static function hidden_count() {
+		global $wpdb;
+
+		$types = self::post_types_in();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_robots_noindex'
+			WHERE p.post_status = 'publish'
+			AND p.post_type IN ({$types})
+			AND pm.meta_value = '1'"
+		);
+		// phpcs:enable
+	}
+
+	/**
+	 * The next published pages to score, after a cursor.
+	 *
+	 * @param string $scope Either missing, for pages with no score, or all.
+	 * @param int    $after The last post ID finished.
+	 * @param int    $limit How many to return.
+	 * @return array Post IDs, ascending.
+	 */
+	public static function ids_after( $scope, $after, $limit ) {
+		global $wpdb;
+
+		$types = self::post_types_in();
+		$join  = '';
+		$where = '';
+
+		if ( 'missing' === $scope ) {
+			$join  = "LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_score'";
+			$where = 'AND pm.meta_id IS NULL';
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				{$join}
+				WHERE p.post_status = 'publish'
+				AND p.post_type IN ({$types})
+				{$where}
+				AND p.ID > %d
+				ORDER BY p.ID ASC LIMIT %d",
+				(int) $after,
+				(int) $limit
+			)
+		);
+		// phpcs:enable
+
+		return array_map( 'intval', (array) $ids );
+	}
+
+	/**
+	 * Work out and store the score for one page.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function score_one( $post_id ) {
+		Analyser::store( $post_id );
+
+		return true;
 	}
 
 	/**

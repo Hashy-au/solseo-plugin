@@ -74,9 +74,9 @@ class Upgrade_Screen extends Screen {
 	/**
 	 * What the add-on adds today.
 	 *
-	 * Two entries, and they are the two things it does. A list that ran ahead
-	 * of the build would be the kind of dishonesty guideline 9 is about, and
-	 * the person reading it is one click from finding out.
+	 * Three entries, and they are the three things it does. A list that ran
+	 * ahead of the build would be the kind of dishonesty guideline 9 is about,
+	 * and the person reading it is one click from finding out.
 	 *
 	 * @return array
 	 */
@@ -85,6 +85,10 @@ class Upgrade_Screen extends Screen {
 			array(
 				'title' => __( 'A score for every phrase', 'solseo' ),
 				'text'  => __( 'The score here is for the focus keyword. The add-on scores every phrase in the Other phrases field as well, each with its own number and its own list of what is missing. A supporting phrase is judged on the checks it can meet: a page has one address and one title opening, so a second phrase is not marked down for not owning them.', 'solseo' ),
+			),
+			array(
+				'title' => __( 'Site health findings, with fixes that report back', 'solseo' ),
+				'text'  => __( 'The findings from your SolSEO health check appear on this dashboard, in the three bands the service itself uses, each with the pages that have it. Where this plugin can fix one, there is a button that fixes it here. Every fix is checked against what your page now says and sent back, so the score moves in seconds rather than at the next check. This one needs a SolSEO account on a paid plan, because the findings come from there.', 'solseo' ),
 			),
 			array(
 				'title' => __( 'Tracked positions where you write', 'solseo' ),

@@ -34,6 +34,17 @@ class Menu {
 				'title'  => __( 'Dashboard', 'solseo' ),
 				'screen' => __NAMESPACE__ . '\\Dashboard_Screen',
 			),
+
+			/*
+			 * Second, not first. The first submenu entry takes over the top
+			 * level slug, so putting Setup there would move the Dashboard.
+			 * It stays in the menu for good, because somebody who skipped a
+			 * step in a hurry needs a way back to it.
+			 */
+			'solseo-setup'     => array(
+				'title'  => __( 'Setup', 'solseo' ),
+				'screen' => __NAMESPACE__ . '\\Setup_Screen',
+			),
 			'solseo-titles'    => array(
 				'title'  => __( 'Titles and Meta', 'solseo' ),
 				'screen' => __NAMESPACE__ . '\\Titles_Screen',

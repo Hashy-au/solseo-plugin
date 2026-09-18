@@ -23,25 +23,39 @@ class Metabox {
 	 * Hook in.
 	 */
 	public static function init() {
-		add_action( 'add_meta_boxes', array( __CLASS__, 'register' ) );
+		add_action( 'add_meta_boxes', array( __CLASS__, 'register' ), 10, 2 );
 		add_action( 'save_post', array( __CLASS__, 'save' ) );
 	}
 
 	/**
-	 * Add the box to every post type the plugin manages.
+	 * Add the box, but only where there is no sidebar.
+	 *
+	 * The block editor gets a panel in the sidebar instead, and nobody ever
+	 * sees both: two copies of the same fields on one screen is a bug report.
+	 * Asking use_block_editor_for_post rather than checking the post type is
+	 * what honours the Classic Editor plugin's per post switch.
+	 *
+	 * @param string   $post_type Post type being edited.
+	 * @param \WP_Post $post      Post being edited.
 	 */
-	public static function register() {
-		foreach ( solseo_post_types() as $post_type ) {
-			add_meta_box(
-				'solseo',
-				__( 'SolSEO', 'solseo' ),
-				array( __CLASS__, 'render' ),
-				$post_type,
-				'normal',
-				'high',
-				array( '__block_editor_compatible_meta_box' => true )
-			);
+	public static function register( $post_type, $post = null ) {
+		if ( ! in_array( $post_type, solseo_post_types(), true ) ) {
+			return;
 		}
+
+		if ( $post && function_exists( 'use_block_editor_for_post' ) && use_block_editor_for_post( $post ) ) {
+			return;
+		}
+
+		add_meta_box(
+			'solseo',
+			__( 'SolSEO', 'solseo' ),
+			array( __CLASS__, 'render' ),
+			$post_type,
+			'normal',
+			'high',
+			array( '__block_editor_compatible_meta_box' => true )
+		);
 	}
 
 	/**
