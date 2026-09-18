@@ -39,19 +39,15 @@ WooCommerce is optional. Nothing asks you to install it.
 
 WordPress 6.4 or later, PHP 7.4 or later.
 
-## Install
+## Download
 
-Clone or download into `wp-content/plugins/solseo` and activate. It works from
-the moment it is switched on, with no setup.
+**[solseo-1.0.0.zip](https://github.com/Hashy-au/solseo-plugin/releases/download/v1.0.0/solseo-1.0.0.zip)**
 
-To build the distributable zip:
+In WordPress, go to Plugins, Add New, Upload Plugin, choose the file and
+activate it. It works from the moment it is switched on, with no setup.
 
-```powershell
-.\build.ps1
-```
-
-That stages only what ships, writes `dist/solseo-<version>.zip` with bsdtar, and
-fails the build if any entry name carries a backslash.
+Every version is on the [releases
+page](https://github.com/Hashy-au/solseo-plugin/releases).
 
 ## Tests
 
