@@ -1,0 +1,4 @@
+# The zip is built on Windows and unpacked on Linux. Store and check out
+# everything with LF so a line ending never reaches a customer server.
+* text=auto eol=lf
+*.ps1 text eol=crlf
