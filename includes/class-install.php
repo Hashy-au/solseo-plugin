@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 class Install {
 
 	/** Bumped when a table changes shape. */
-	const SCHEMA = 2;
+	const SCHEMA = 3;
 
 	/**
 	 * Create the tables, seed the settings and schedule the jobs.
@@ -53,6 +53,15 @@ class Install {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( 'solseo_daily' );
 		wp_clear_scheduled_hook( 'solseo_hub_sync' );
+
+		/*
+		 * The link backfill books itself one post batch at a time and carries
+		 * the cursor as an argument, so wp_clear_scheduled_hook() walks past
+		 * it: that function only matches events booked with no arguments. It
+		 * was left behind on every deactivation until D-158.3, which is how a
+		 * chain of single events outlived the plugin that started it.
+		 */
+		wp_unschedule_hook( 'solseo_links_backfill' );
 		delete_transient( 'solseo_sitemap_index' );
 		flush_rewrite_rules( false );
 	}
@@ -117,6 +126,44 @@ class Install {
 				KEY source_id (source_id),
 				KEY target_id (target_id),
 				KEY target_url (target_url(191))
+			) {$charset};"
+		);
+
+		/*
+		 * The crawl, which is both the frontier and the result. A row with
+		 * nothing in fetched_at is an address waiting its turn, so closing the
+		 * browser leaves the queue exactly where it was and carrying on is the
+		 * same query it always was.
+		 *
+		 * The unique key is over a hash rather than over the address, because
+		 * an index on a 255 character column does not fit in the 191 character
+		 * limit utf8mb4 leaves, and a prefix index would call two long
+		 * addresses that share their first 191 characters the same page.
+		 */
+		dbDelta(
+			"CREATE TABLE {$prefix}solseo_crawl (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				url varchar(255) NOT NULL DEFAULT '',
+				url_hash char(32) NOT NULL DEFAULT '',
+				source varchar(10) NOT NULL DEFAULT 'seed',
+				chosen_by varchar(10) NOT NULL DEFAULT '',
+				post_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				found_on bigint(20) unsigned NOT NULL DEFAULT 0,
+				status_code smallint(4) NOT NULL DEFAULT 0,
+				redirect_to varchar(255) NOT NULL DEFAULT '',
+				canonical varchar(255) NOT NULL DEFAULT '',
+				robots varchar(100) NOT NULL DEFAULT '',
+				title varchar(255) NOT NULL DEFAULT '',
+				description varchar(320) NOT NULL DEFAULT '',
+				h1 varchar(255) NOT NULL DEFAULT '',
+				h1_count smallint(4) NOT NULL DEFAULT 0,
+				words mediumint(8) NOT NULL DEFAULT 0,
+				note varchar(191) NOT NULL DEFAULT '',
+				fetched_at datetime DEFAULT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY url_hash (url_hash),
+				KEY fetched_at (fetched_at),
+				KEY status_code (status_code)
 			) {$charset};"
 		);
 	}

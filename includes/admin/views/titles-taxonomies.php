@@ -6,6 +6,8 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
 ?>
 <p class="description"><?php esc_html_e( 'Category and tag archives are real landing pages. Give them titles worth clicking.', 'solseo' ); ?></p>
 

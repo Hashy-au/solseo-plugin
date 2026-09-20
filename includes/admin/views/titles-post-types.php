@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
+
 $schema_types = \SolSEO\Admin\Titles_Screen::schema_types();
 ?>
 <p class="description"><?php esc_html_e( 'These are used whenever a page has nothing written in its own SEO fields.', 'solseo' ); ?></p>

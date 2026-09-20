@@ -54,7 +54,19 @@ defined( 'ABSPATH' ) || exit;
 
 			<p>
 				<a class="button button-primary" href="https://solseo.com.au" target="_blank" rel="noopener"><?php esc_html_e( 'Look at solseo.com.au', 'solseo' ); ?></a>
-				<a class="button" href="<?php echo esc_url( add_query_arg( 'page', 'solseo-connect', admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'I have a code', 'solseo' ); ?></a>
+				<a class="button" href="
+				<?php
+				echo esc_url(
+					add_query_arg(
+						array(
+							'page' => 'solseo-settings',
+							'tab'  => 'connections',
+						),
+						admin_url( 'admin.php' )
+					)
+				);
+				?>
+				"><?php esc_html_e( 'I have a code', 'solseo' ); ?></a>
 			</p>
 		</div>
 	<?php endif; ?>

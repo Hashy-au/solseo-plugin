@@ -1,0 +1,4 @@
+# Written by run.sh when a run fails: the Playground CLI log, kept where
+# somebody can read it. Regenerable output, so it is not a repository file.
+last-run-cli.log
+last-run.txt

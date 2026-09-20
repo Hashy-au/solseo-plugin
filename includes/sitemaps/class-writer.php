@@ -62,6 +62,33 @@ class Writer {
 	}
 
 	/**
+	 * The posts of one type that belong in the sitemap, in its own order.
+	 *
+	 * The crawler picks its pages partly from the sitemap, and it asks here
+	 * rather than writing the same query again, so a page the sitemap leaves
+	 * out is a page the crawl leaves out. Two queries that mean to agree about
+	 * what belongs on a site eventually do not.
+	 *
+	 * @param string $post_type Post type name.
+	 * @param int    $limit     How many at most.
+	 * @return array Post IDs.
+	 */
+	public static function post_ids( $post_type, $limit ) {
+		if ( ! post_type_exists( $post_type ) ) {
+			return array();
+		}
+
+		$args                           = self::post_query( $post_type, 1, (int) $limit );
+		$args['fields']                 = 'ids';
+		$args['no_found_rows']          = true;
+		$args['update_post_meta_cache'] = false;
+
+		$query = new \WP_Query( $args );
+
+		return array_map( 'intval', (array) $query->posts );
+	}
+
+	/**
 	 * How many posts of a type belong in the sitemap.
 	 *
 	 * @param string $post_type Post type name.

@@ -20,11 +20,13 @@ class Admin {
 	public static function init() {
 		Menu::init();
 		Metabox::init();
-		Columns::init();
 		Term_Fields::init();
-		Dashboard_Widget::init();
+		User_Fields::init();
 		Conflict_Notice::init();
 		Editor_Assets::init();
+
+		// The admin side of anything that is not core. Columns and the widget live here.
+		\SolSEO\Modules::boot( \SolSEO\Modules::ADMIN );
 
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( SOLSEO_FILE ), array( __CLASS__, 'action_links' ) );

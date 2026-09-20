@@ -62,7 +62,7 @@ class Table_Source {
 		$table = self::table( $source );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the table name comes from our own data file, never from a request.
-		return (int) $wpdb->get_var(
+		return (int) $wpdb->get_var( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			"SELECT COUNT(*) FROM {$table}
 			WHERE ( title IS NOT NULL AND title != '' )
 			OR ( description IS NOT NULL AND description != '' )"
@@ -88,7 +88,7 @@ class Table_Source {
 		$table = self::table( $source );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the table name comes from our own data file, never from a request.
-		$ids = $wpdb->get_col(
+		$ids = $wpdb->get_col( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				"SELECT post_id FROM {$table}
 				WHERE ( ( title IS NOT NULL AND title != '' ) OR ( description IS NOT NULL AND description != '' ) )
@@ -120,7 +120,7 @@ class Table_Source {
 		$table = self::table( $source );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the table name comes from our own data file, never from a request.
-		$ids = $wpdb->get_col(
+		$ids = $wpdb->get_col( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				"SELECT theirs.post_id FROM {$table} theirs
 				LEFT JOIN {$wpdb->postmeta} ours
@@ -155,8 +155,7 @@ class Table_Source {
 
 		$table = self::table( $source );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d", (int) $post_id ), ARRAY_A );
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d", (int) $post_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 
 		if ( ! is_array( $row ) ) {
 			return array();

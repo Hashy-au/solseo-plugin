@@ -6,6 +6,8 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
 ?>
 <div class="solseo-card">
 	<h2><?php esc_html_e( 'Add a redirect', 'solseo' ); ?></h2>

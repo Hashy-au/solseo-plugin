@@ -82,7 +82,7 @@ class Manager {
 		$paths = array_unique( array( $request, untrailingslashit( $request ), trailingslashit( $request ) ) );
 		$slots = implode( ', ', array_fill( 0, count( $paths ), '%s' ) );
 
-		$exact = $wpdb->get_row(
+		$exact = $wpdb->get_row( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE enabled = 1 AND match_type = 'exact' AND source IN ({$slots}) LIMIT 1",
 				...array_values( $paths )
@@ -94,7 +94,7 @@ class Manager {
 			return $exact;
 		}
 
-		$patterns = $wpdb->get_results(
+		$patterns = $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			"SELECT * FROM {$table} WHERE enabled = 1 AND match_type = 'regex'",
 			ARRAY_A
 		);
@@ -122,7 +122,19 @@ class Manager {
 	public static function save( array $rule, $id = 0 ) {
 		global $wpdb;
 
-		$source = self::normalise( isset( $rule['source'] ) ? $rule['source'] : '' );
+		/*
+		 * THE MATCH TYPE IS DECIDED FIRST, BECAUSE normalise() IS ABOUT PATHS.
+		 *
+		 * It glues a leading slash on, which is exactly right for a path and
+		 * ruinous for a pattern: `^/old-shop/(.*)$` came out of it as
+		 * `/^/old-shop/(.*)$`, and a `^` that is not at the start of a
+		 * pattern, with no `m` modifier, can never match. The rule then sat on
+		 * the Rules tab looking like the one that was typed with its hit count
+		 * stuck on zero (D-158.1). A regex is stored as it was typed.
+		 */
+		$type   = 'regex' === ( isset( $rule['match_type'] ) ? $rule['match_type'] : '' ) ? 'regex' : 'exact';
+		$typed  = isset( $rule['source'] ) ? (string) $rule['source'] : '';
+		$source = 'regex' === $type ? trim( $typed ) : self::normalise( $typed );
 		$target = isset( $rule['target'] ) ? trim( $rule['target'] ) : '';
 
 		if ( '' === $source || ( '' === $target && ! in_array( (int) $rule['status_code'], array( 410, 451 ), true ) ) ) {
@@ -133,7 +145,7 @@ class Manager {
 			'source'      => $source,
 			'target'      => $target,
 			'status_code' => in_array( (int) $rule['status_code'], array( 301, 302, 307, 410, 451 ), true ) ? (int) $rule['status_code'] : 301,
-			'match_type'  => 'regex' === ( isset( $rule['match_type'] ) ? $rule['match_type'] : '' ) ? 'regex' : 'exact',
+			'match_type'  => $type,
 			'enabled'     => empty( $rule['enabled'] ) ? 0 : 1,
 		);
 
@@ -146,6 +158,97 @@ class Manager {
 
 		$wpdb->insert( Install::table( 'redirects' ), $data );
 		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Which of these stored patterns are provably dead, and what they should say.
+	 *
+	 * ONLY `/^` IS TOUCHED, AND THE REASON IS THAT IT CANNOT MATCH.
+	 *
+	 * A pattern beginning `/^` asks the engine to consume a slash and then
+	 * assert that nothing has been consumed. There is no subject and no offset
+	 * where that holds, so a rule shaped like this answers nothing today, and
+	 * taking the slash off it cannot change an answer anybody is getting. That
+	 * is the whole of the safety argument.
+	 *
+	 * EVERY OTHER SHAPE IS LEFT ALONE, AND NOT OUT OF CAUTION. `/product/(.*)`
+	 * in the column is the same bytes whether it was typed with the slash or
+	 * without it. The two are indistinguishable, so a blanket strip would
+	 * break rules that were typed correctly in order to fix rules that were
+	 * not, and the ones it would break are the ones that work.
+	 *
+	 * @param array $sources Stored sources of regex rules.
+	 * @return array Map of the stored source to what it should be. Only the
+	 *               ones that change are in it.
+	 */
+	public static function repair_regex_sources( array $sources ) {
+		$fixes = array();
+
+		foreach ( $sources as $source ) {
+			$source = (string) $source;
+
+			if ( 0 !== strpos( $source, '/^' ) ) {
+				continue;
+			}
+
+			$fixes[ $source ] = substr( $source, 1 );
+		}
+
+		return $fixes;
+	}
+
+	/**
+	 * Take the stray slash off every stored regex that cannot match because of it.
+	 *
+	 * Runs once, from the upgrade path. The option is what stops it running
+	 * again: a customer who deliberately retypes a rule as `/^...` afterwards
+	 * has written a rule that matches nothing, and quietly rewriting it under
+	 * them a second time would be us editing their rule rather than undoing
+	 * our own bug.
+	 *
+	 * @return int How many rules were changed.
+	 */
+	public static function repair_regex_rules() {
+		global $wpdb;
+
+		$table = Install::table( 'redirects' );
+
+		$rules = (array) $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
+			"SELECT id, source FROM {$table} WHERE match_type = 'regex'",
+			ARRAY_A
+		);
+
+		$sources = array();
+
+		foreach ( $rules as $rule ) {
+			$sources[] = isset( $rule['source'] ) ? (string) $rule['source'] : '';
+		}
+
+		$fixes = self::repair_regex_sources( $sources );
+
+		if ( ! $fixes ) {
+			return 0;
+		}
+
+		$changed = 0;
+
+		foreach ( $rules as $rule ) {
+			$source = isset( $rule['source'] ) ? (string) $rule['source'] : '';
+
+			if ( ! isset( $fixes[ $source ] ) ) {
+				continue;
+			}
+
+			$wpdb->update(
+				$table,
+				array( 'source' => $fixes[ $source ] ),
+				array( 'id' => (int) $rule['id'] )
+			);
+
+			++$changed;
+		}
+
+		return $changed;
 	}
 
 	/**
@@ -171,7 +274,7 @@ class Manager {
 
 		$table = Install::table( 'redirects' );
 
-		return (array) $wpdb->get_results(
+		return (array) $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset ),
 			ARRAY_A
 		);
@@ -187,7 +290,7 @@ class Manager {
 
 		$table = Install::table( 'redirects' );
 
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 	}
 
 	/**
@@ -199,7 +302,7 @@ class Manager {
 		$days  = max( 1, (int) Options::get( 'log_retention_days' ) );
 		$table = Install::table( 'not_found' );
 
-		$wpdb->query(
+		$wpdb->query( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare( "DELETE FROM {$table} WHERE last_seen < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)", $days )
 		);
 	}
@@ -257,7 +360,7 @@ class Manager {
 
 		$table = Install::table( 'redirects' );
 
-		$wpdb->query(
+		$wpdb->query( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare( "UPDATE {$table} SET hits = hits + 1, last_used = %s WHERE id = %d", current_time( 'mysql', true ), $id )
 		);
 	}
@@ -277,7 +380,7 @@ class Manager {
 		$now      = current_time( 'mysql', true );
 		$table    = Install::table( 'not_found' );
 
-		$wpdb->query(
+		$wpdb->query( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				"INSERT INTO {$table} (url, referrer, hits, first_seen, last_seen) VALUES (%s, %s, 1, %s, %s)
 				ON DUPLICATE KEY UPDATE hits = hits + 1, last_seen = VALUES(last_seen), referrer = VALUES(referrer)",

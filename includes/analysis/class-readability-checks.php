@@ -7,6 +7,8 @@
 
 namespace SolSEO\Analysis;
 
+use SolSEO\Options;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -63,12 +65,20 @@ class Readability_Checks extends Checks {
 			return self::result( 'reading_ease', 3, self::SKIPPED, __( 'There is not enough text to measure how it reads.', 'solseo' ) );
 		}
 
-		if ( $score >= 60 ) {
+		/*
+		 * The target is the writing profile's, and it ships at sixty, which is
+		 * what this check used before the profile existed. Nothing moves on an
+		 * existing site unless somebody changes it deliberately.
+		 */
+		$target = (int) Options::get( 'writing_reading_ease' );
+		$target = $target > 0 ? $target : 60;
+
+		if ( $score >= $target ) {
 			/* translators: %s: reading ease score out of 100. */
 			return self::result( 'reading_ease', 3, self::GOOD, sprintf( __( 'Reading ease %s. Most readers will follow this.', 'solseo' ), $score ) );
 		}
 
-		if ( $score >= 45 ) {
+		if ( $score >= $target - 15 ) {
 			/* translators: %s: reading ease score out of 100. */
 			return self::result( 'reading_ease', 3, self::FAIR, sprintf( __( 'Reading ease %s. Shorter words and sentences would help.', 'solseo' ), $score ) );
 		}
@@ -90,10 +100,12 @@ class Readability_Checks extends Checks {
 			return self::result( 'sentence_length', 3, self::SKIPPED, __( 'There are no sentences to measure.', 'solseo' ) );
 		}
 
-		$long = 0;
+		$limit = (int) Options::get( 'writing_sentence' );
+		$limit = $limit > 0 ? $limit : 20;
+		$long  = 0;
 
 		foreach ( $paper['sentences'] as $sentence ) {
-			if ( count( Text::words( $sentence ) ) > 20 ) {
+			if ( count( Text::words( $sentence ) ) > $limit ) {
 				++$long;
 			}
 		}
@@ -104,8 +116,8 @@ class Readability_Checks extends Checks {
 			return self::result( 'sentence_length', 3, self::GOOD, __( 'Sentence length is comfortable.', 'solseo' ) );
 		}
 
-		/* translators: %d: percentage of sentences over twenty words. */
-		$note = sprintf( __( '%d%% of sentences run over twenty words. Split the longest ones.', 'solseo' ), $share );
+		/* translators: 1: percentage of sentences, 2: the sentence length this site aims at. */
+		$note = sprintf( __( '%1$d%% of sentences run over %2$d words. Split the longest ones.', 'solseo' ), $share, $limit );
 
 		return self::result( 'sentence_length', 3, $share <= 35 ? self::FAIR : self::POOR, $note );
 	}

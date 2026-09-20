@@ -52,6 +52,7 @@ class Analyser {
 			'band'   => self::band( $score ),
 			'checks' => $checks,
 			'groups' => self::by_group( $checks ),
+			'source' => isset( $paper['source'] ) ? $paper['source'] : array(),
 		);
 	}
 
@@ -142,6 +143,7 @@ class Analyser {
 			'keyword'     => __( 'Keyword', 'solseo' ),
 			'basics'      => __( 'Basics', 'solseo' ),
 			'readability' => __( 'Readability', 'solseo' ),
+			'writing'     => __( 'Writing', 'solseo' ),
 			'product'     => __( 'Product', 'solseo' ),
 		);
 
@@ -158,6 +160,7 @@ class Analyser {
 			__NAMESPACE__ . '\\Keyword_Checks',
 			__NAMESPACE__ . '\\Basic_Checks',
 			__NAMESPACE__ . '\\Readability_Checks',
+			__NAMESPACE__ . '\\Writing_Checks',
 			__NAMESPACE__ . '\\Product_Checks',
 		);
 	}
@@ -215,6 +218,7 @@ class Analyser {
 			'score'     => $analysis['score'],
 			'band'      => $analysis['band'],
 			'failed'    => $failed,
+			'source'    => isset( $analysis['source']['slug'] ) ? $analysis['source']['slug'] : 'stored',
 			'scored_at' => current_time( 'mysql', true ),
 		);
 	}

@@ -9,6 +9,7 @@ namespace SolSEO\Admin;
 
 use SolSEO\Analysis\Analyser;
 use SolSEO\Analysis\Paper;
+use SolSEO\Connect\Google;
 use SolSEO\Meta;
 use SolSEO\Options;
 
@@ -68,6 +69,10 @@ class Metabox {
 
 		$analysis = Analyser::run( Paper::from_post( $post ) );
 
+		/*
+		 * google is a status and nothing more. Nothing here asks Google
+		 * anything: the panel asks for itself when somebody opens it (FreeC1).
+		 */
 		Screen::view(
 			'metabox',
 			array(
@@ -75,6 +80,7 @@ class Metabox {
 				'analysis' => $analysis,
 				'meta'     => self::values( $post->ID ),
 				'settings' => Options::post_type( $post->post_type ),
+				'google'   => Google::status(),
 			)
 		);
 	}

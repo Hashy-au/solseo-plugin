@@ -162,3 +162,48 @@ $solseo_moved    = \SolSEO\Robots_Backup::moved_file();
 		</form>
 	<?php endif; ?>
 </div>
+
+<div class="solseo-card solseo-card-wide">
+	<h2><?php esc_html_e( 'The crawlers that are not search engines', 'solseo' ); ?></h2>
+
+	<p><?php esc_html_e( 'Some of these collect text to train a model and send you nothing back. Others fetch your pages to answer somebody\'s question with a link to you, and blocking those is turning away readers. The difference is the whole decision, so it is written out for each one.', 'solseo' ); ?></p>
+
+	<p class="description"><?php esc_html_e( 'What each one is allowed to do is read back out of the file above, because that file is what a crawler obeys. Change it there and this changes with it.', 'solseo' ); ?></p>
+
+	<div class="table-wrap">
+		<table class="widefat striped solseo-crawlers">
+			<thead>
+				<tr>
+					<th scope="col"><?php esc_html_e( 'Crawler', 'solseo' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'What it does', 'solseo' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'What blocking it costs you', 'solseo' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Now', 'solseo' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $data['crawlers'] as $solseo_token => $solseo_crawler ) : ?>
+					<tr>
+						<td>
+							<strong><?php echo esc_html( $solseo_token ); ?></strong>
+							<br>
+							<span class="description"><?php echo esc_html( $solseo_crawler['operator'] ); ?></span>
+						</td>
+						<td class="wrap"><?php echo esc_html( $solseo_crawler['purpose'] ); ?></td>
+						<td class="wrap">
+							<?php echo esc_html( $solseo_crawler['cost'] ); ?>
+							<br>
+							<a href="<?php echo esc_url( $solseo_crawler['source'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'What they say about it', 'solseo' ); ?></a>
+						</td>
+						<td>
+							<?php if ( $solseo_crawler['blocked'] ) : ?>
+								<span class="solseo-crawler-blocked"><?php esc_html_e( 'Blocked', 'solseo' ); ?></span>
+							<?php else : ?>
+								<span class="solseo-crawler-allowed"><?php esc_html_e( 'Allowed', 'solseo' ); ?></span>
+							<?php endif; ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+</div>

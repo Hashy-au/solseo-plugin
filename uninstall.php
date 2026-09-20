@@ -32,6 +32,7 @@ $solseo_options = array(
 	'solseo_setup',
 	'solseo_switched_off',
 	'solseo_links_indexed',
+	'solseo_redirect_regex_repaired',
 );
 
 foreach ( $solseo_options as $solseo_option ) {
@@ -51,3 +52,6 @@ delete_transient( 'solseo_hub_overview' );
 
 wp_clear_scheduled_hook( 'solseo_daily' );
 wp_clear_scheduled_hook( 'solseo_hub_sync' );
+// The backfill books itself with an argument, so wp_clear_scheduled_hook(),
+// which only matches events booked with none, would walk straight past it.
+wp_unschedule_hook( 'solseo_links_backfill' );

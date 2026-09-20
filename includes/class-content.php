@@ -7,6 +7,8 @@
 
 namespace SolSEO;
 
+use SolSEO\Content\Readers;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -17,8 +19,11 @@ class Content {
 	/**
 	 * Post content with blocks rendered and shortcodes removed.
 	 *
-	 * The `the_content` filter is deliberately not applied. Page builders and
-	 * related-post plugins hook it and would put their markup into the score.
+	 * The `the_content` filter is deliberately not applied here. Related post
+	 * plugins and sharing buttons hook it and would put their markup into the
+	 * score. A page a builder drew is the exception, and that goes through
+	 * Readers, which only reaches for `the_content` when the alternative is
+	 * scoring an empty string.
 	 *
 	 * @param \WP_Post|int $post Post or post ID.
 	 * @return string HTML.
@@ -44,14 +49,18 @@ class Content {
 			return $done[ $key ];
 		}
 
-		$html = $post->post_content;
+		$html = Readers::html( $post );
 
-		if ( has_blocks( $html ) ) {
-			$html = do_blocks( $html );
+		if ( '' === $html ) {
+			$html = $post->post_content;
+
+			if ( has_blocks( $html ) ) {
+				$html = do_blocks( $html );
+			}
+
+			$html = strip_shortcodes( $html );
+			$html = wpautop( $html );
 		}
-
-		$html = strip_shortcodes( $html );
-		$html = wpautop( $html );
 
 		if ( 'product' === $post->post_type && $post->post_excerpt ) {
 			$html = wpautop( $post->post_excerpt ) . $html;

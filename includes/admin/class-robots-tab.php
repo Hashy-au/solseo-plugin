@@ -11,6 +11,7 @@
 
 namespace SolSEO\Admin;
 
+use SolSEO\Frontend\Ai_Crawlers;
 use SolSEO\Frontend\Robots_Txt;
 use SolSEO\Robots_Backup;
 
@@ -34,7 +35,7 @@ class Robots_Tab extends Screen {
 			update_option( 'solseo_robots_rules', $rules, false );
 
 			self::remember( __( 'Saved.', 'solseo' ) );
-			self::go_back( Tools_Screen::PAGE, array( 'tab' => 'robots' ) );
+			self::go_back( Technical_Screen::PAGE, array( 'tab' => 'robots' ) );
 		}
 
 		if ( self::submitted( 'solseo_robots_restore' ) ) {
@@ -46,7 +47,7 @@ class Robots_Tab extends Screen {
 				self::remember( $put_back );
 			}
 
-			self::go_back( Tools_Screen::PAGE, array( 'tab' => 'robots' ) );
+			self::go_back( Technical_Screen::PAGE, array( 'tab' => 'robots' ) );
 		}
 
 		if ( self::submitted( 'solseo_robots_takeover' ) ) {
@@ -55,7 +56,7 @@ class Robots_Tab extends Screen {
 
 			if ( ! $understood ) {
 				self::remember( __( 'Tick the box to say you understand the file will be renamed.', 'solseo' ), 'error' );
-				self::go_back( Tools_Screen::PAGE, array( 'tab' => 'robots' ) );
+				self::go_back( Technical_Screen::PAGE, array( 'tab' => 'robots' ) );
 			}
 
 			$taken = Robots_Backup::take_over();
@@ -66,14 +67,14 @@ class Robots_Tab extends Screen {
 				self::remember( $taken );
 			}
 
-			self::go_back( Tools_Screen::PAGE, array( 'tab' => 'robots' ) );
+			self::go_back( Technical_Screen::PAGE, array( 'tab' => 'robots' ) );
 		}
 
 		if ( self::submitted( 'solseo_robots_public' ) ) {
 			update_option( 'blog_public', '0' );
 
 			self::remember( __( 'The site is now hidden from search engines in the WordPress setting as well.', 'solseo' ) );
-			self::go_back( Tools_Screen::PAGE, array( 'tab' => 'robots' ) );
+			self::go_back( Technical_Screen::PAGE, array( 'tab' => 'robots' ) );
 		}
 	}
 
@@ -90,18 +91,47 @@ class Robots_Tab extends Screen {
 		 * folding of one group into another is the whole point of composing,
 		 * and joining two strings in the browser is not that.
 		 */
+		$served = Robots_Txt::preview( $rules );
+
 		self::view(
 			'tools-robots',
 			array(
 				'rules'    => $rules,
-				'served'   => Robots_Txt::preview( $rules ),
+				'served'   => $served,
 				'presets'  => self::presets(),
+				'crawlers' => self::crawlers( $served ),
 				'on_disk'  => Robots_Backup::file_on_disk(),
 				'takeover' => Robots_Backup::may_take_over(),
 				'backup'   => Robots_Backup::stored(),
 				'public'   => '0' !== (string) get_option( 'blog_public', '1' ),
 			)
 		);
+	}
+
+	/**
+	 * The AI crawler catalogue, with each one's state read out of the file.
+	 *
+	 * The state is derived rather than stored. robots.txt is what a crawler
+	 * obeys, so it is the only honest place to read the answer from, and a
+	 * stored copy beside it is a second truth waiting to disagree.
+	 *
+	 * @param string $served The composed robots.txt.
+	 * @return array
+	 */
+	protected static function crawlers( $served ) {
+		$rows = array();
+
+		foreach ( Ai_Crawlers::all() as $token => $crawler ) {
+			$rows[ $token ] = array(
+				'operator' => $crawler['operator'],
+				'purpose'  => $crawler['purpose'],
+				'cost'     => $crawler['cost'],
+				'source'   => $crawler['source'],
+				'blocked'  => Ai_Crawlers::blocked( $token, $served ),
+			);
+		}
+
+		return $rows;
 	}
 
 	/**
@@ -176,16 +206,7 @@ class Robots_Tab extends Screen {
 	 * @return array
 	 */
 	public static function ai_agents() {
-		return array(
-			'GPTBot',
-			'ClaudeBot',
-			'Google-Extended',
-			'CCBot',
-			'PerplexityBot',
-			'Bytespider',
-			'Applebot-Extended',
-			'meta-externalagent',
-		);
+		return Ai_Crawlers::tokens();
 	}
 
 	/**

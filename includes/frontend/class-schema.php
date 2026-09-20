@@ -10,6 +10,7 @@
 
 namespace SolSEO\Frontend;
 
+use SolSEO\Admin\User_Fields;
 use SolSEO\Breadcrumbs;
 use SolSEO\Content;
 use SolSEO\Context;
@@ -81,6 +82,20 @@ class Schema {
 
 			if ( $main ) {
 				$graph[] = $main;
+
+				/*
+				 * The author stands as its own node rather than inside the
+				 * article, so the two can say more than a name: what this
+				 * person does, what they are an authority on and where else
+				 * they are. The article points at it by id.
+				 */
+				if ( isset( $main['author']['@id'] ) ) {
+					$person = self::person( (int) get_post_field( 'post_author', $context['object_id'] ) );
+
+					if ( $person ) {
+						$graph[] = $person;
+					}
+				}
 			}
 		}
 
@@ -273,6 +288,10 @@ class Schema {
 			return self::product( $context['object_id'] );
 		}
 
+		if ( in_array( $type, array( 'Service', 'Course' ), true ) ) {
+			return self::offered( $context['object_id'], $type );
+		}
+
 		return self::article( $context['object_id'], $type );
 	}
 
@@ -295,11 +314,7 @@ class Schema {
 			'dateModified'     => get_the_modified_date( DATE_W3C, $post_id ),
 			'mainEntityOfPage' => array( '@id' => $url . '#webpage' ),
 			'publisher'        => array( '@id' => home_url( '/#publisher' ) ),
-			'author'           => array(
-				'@type' => 'Person',
-				'name'  => get_the_author_meta( 'display_name', $post ? $post->post_author : 0 ),
-				'url'   => get_author_posts_url( $post ? $post->post_author : 0 ),
-			),
+			'author'           => array( '@id' => self::person_id( $post ? (int) $post->post_author : 0 ) ),
 		);
 
 		$description = Head::description();
@@ -330,6 +345,141 @@ class Schema {
 		}
 
 		return $node;
+	}
+
+	/**
+	 * Something the business offers: a service, or a course.
+	 *
+	 * Both are built from what a page already has, which is why these two and
+	 * not Event or Recipe. An event needs a start date and a place, and a
+	 * recipe needs ingredients and steps; a page holds neither, so those two
+	 * wait for the release that gives them somewhere to be typed. Emitting
+	 * them from a title and a description would be inventing the facts.
+	 *
+	 * A page with no description emits nothing at all, because a service with
+	 * a name and nothing else describes nothing.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $type    Service or Course.
+	 * @return array|null
+	 */
+	protected static function offered( $post_id, $type ) {
+		$name        = wp_strip_all_tags( get_the_title( $post_id ) );
+		$description = Head::description();
+
+		if ( '' === trim( $name ) || '' === trim( (string) $description ) ) {
+			return null;
+		}
+
+		$url = self::current_url();
+
+		$node = array(
+			'@type'       => $type,
+			'@id'         => $url . '#' . strtolower( $type ),
+			'name'        => $name,
+			'description' => $description,
+			'url'         => $url,
+			'provider'    => array( '@id' => home_url( '/#publisher' ) ),
+		);
+
+		$image = get_post_thumbnail_id( $post_id );
+
+		if ( $image ) {
+			$source = wp_get_attachment_image_src( $image, 'full' );
+
+			if ( $source ) {
+				$node['image'] = $source[0];
+			}
+		}
+
+		return $node;
+	}
+
+	/**
+	 * The person who wrote it.
+	 *
+	 * Name and address are always there, because an article with an author
+	 * needs to say who. Everything else is added only when somebody filled it
+	 * in: an empty job title is left out rather than published as an empty
+	 * string, which is what "no half built node" means in practice.
+	 *
+	 * @param int $user_id Author ID.
+	 * @return array|null
+	 */
+	public static function person( $user_id ) {
+		$user_id = (int) $user_id;
+
+		if ( ! $user_id ) {
+			return null;
+		}
+
+		$name = get_the_author_meta( 'display_name', $user_id );
+
+		if ( ! $name ) {
+			return null;
+		}
+
+		$node = array(
+			'@type' => 'Person',
+			'@id'   => self::person_id( $user_id ),
+			'name'  => $name,
+			'url'   => get_author_posts_url( $user_id ),
+		);
+
+		$bio = trim( (string) get_the_author_meta( 'description', $user_id ) );
+
+		if ( $bio ) {
+			$node['description'] = $bio;
+		}
+
+		$title = trim( (string) get_user_meta( $user_id, User_Fields::TITLE, true ) );
+
+		if ( $title ) {
+			$node['jobTitle'] = $title;
+		}
+
+		$credentials = trim( (string) get_user_meta( $user_id, User_Fields::CREDENTIALS, true ) );
+
+		if ( $credentials ) {
+			$node['honorificSuffix'] = $credentials;
+		}
+
+		$knows = self::split_list( (string) get_user_meta( $user_id, User_Fields::KNOWS, true ), ',' );
+
+		if ( $knows ) {
+			$node['knowsAbout'] = $knows;
+		}
+
+		$profiles = self::split_list( (string) get_user_meta( $user_id, User_Fields::PROFILES, true ), "\n" );
+
+		if ( $profiles ) {
+			$node['sameAs'] = $profiles;
+		}
+
+		return $node;
+	}
+
+	/**
+	 * The address a person node is known by.
+	 *
+	 * @param int $user_id Author ID.
+	 * @return string
+	 */
+	protected static function person_id( $user_id ) {
+		return get_author_posts_url( (int) $user_id ) . '#person';
+	}
+
+	/**
+	 * Split a stored list into its parts, with the empties dropped.
+	 *
+	 * @param string $stored    What was saved.
+	 * @param string $separator What separates one from the next.
+	 * @return array
+	 */
+	protected static function split_list( $stored, $separator ) {
+		$parts = array_map( 'trim', explode( $separator, $stored ) );
+
+		return array_values( array_filter( $parts, 'strlen' ) );
 	}
 
 	/**

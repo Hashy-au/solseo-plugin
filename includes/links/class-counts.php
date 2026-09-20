@@ -23,6 +23,21 @@ class Counts {
 	const INCOMING = '_solseo_links_incoming';
 
 	/**
+	 * How many links the index is holding, across the whole site.
+	 *
+	 * One count, asked for by one screen. Nothing on a page a visitor sees
+	 * calls this.
+	 *
+	 * @return int
+	 */
+	public static function total() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- our own table, one row, read on one admin screen.
+		return (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . $wpdb->prefix . 'solseo_links' );
+	}
+
+	/**
 	 * Work out afresh how many pages link to each of these.
 	 *
 	 * One query however many were handed over, and the list is bounded by how
@@ -45,7 +60,7 @@ class Counts {
 		$counts = array_fill_keys( $target_ids, 0 );
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- the IN list is one %d per id, built above.
-		$rows = $wpdb->get_results(
+		$rows = $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				"SELECT target_id, COUNT(DISTINCT source_id) AS total FROM {$table}
 				WHERE link_type = 'internal'
@@ -65,6 +80,36 @@ class Counts {
 		foreach ( $counts as $post_id => $total ) {
 			update_post_meta( $post_id, self::INCOMING, $total );
 		}
+	}
+
+	/**
+	 * The pages the rest of the site points at most, best first.
+	 *
+	 * Read off the table rather than off the stored count, because the stored
+	 * count lives in post meta and sorting forty thousand rows of meta to find
+	 * the top three hundred is a query nobody wants on an admin screen.
+	 *
+	 * @param int $limit How many.
+	 * @return array Post IDs.
+	 */
+	public static function most_linked( $limit ) {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'solseo_links';
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT target_id FROM {$table}
+				WHERE link_type = 'internal' AND target_id > 0 AND source_id <> target_id
+				GROUP BY target_id
+				ORDER BY COUNT(DISTINCT source_id) DESC, target_id ASC
+				LIMIT %d",
+				(int) $limit
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
 	}
 
 	/**

@@ -27,7 +27,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$rows = $wpdb->get_col(
+		$rows = $wpdb->get_col( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			"SELECT pm.meta_value FROM {$wpdb->postmeta} pm
 			INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
 			WHERE pm.meta_key = '_solseo_score'
@@ -72,7 +72,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$rows = $wpdb->get_results(
+		$rows = $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			$wpdb->prepare(
 				"SELECT p.ID, p.post_title, pm.meta_value AS score FROM {$wpdb->postmeta} pm
 				INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
@@ -112,7 +112,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		return (int) $wpdb->get_var(
+		return (int) $wpdb->get_var( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			"SELECT COUNT(*) FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_score'
 			WHERE p.post_status = 'publish'
@@ -138,7 +138,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
-		return (int) $wpdb->get_var(
+		return (int) $wpdb->get_var( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			"SELECT COUNT(*) FROM {$wpdb->posts} p
 			WHERE p.post_status = 'publish'
 			AND p.post_type IN ({$types})"
@@ -161,7 +161,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
-		return (int) $wpdb->get_var(
+		return (int) $wpdb->get_var( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			"SELECT COUNT(*) FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_description'
 			WHERE p.post_status = 'publish'
@@ -185,7 +185,7 @@ class Score_Report {
 		$types = self::post_types_in();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
-		return (int) $wpdb->get_var(
+		return (int) $wpdb->get_var( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			"SELECT COUNT(*) FROM {$wpdb->posts} p
 			INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_solseo_robots_noindex'
 			WHERE p.post_status = 'publish'
@@ -216,7 +216,7 @@ class Score_Report {
 		}
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- the post type list is prepared one value at a time by post_types_in().
-		$ids = $wpdb->get_col(
+		$ids = $wpdb->get_col( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- post_types_in() puts every value through $wpdb->prepare() before joining them, and the join clause is one of two literals set above.
 			$wpdb->prepare(
 				"SELECT p.ID FROM {$wpdb->posts} p
 				{$join}

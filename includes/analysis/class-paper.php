@@ -8,6 +8,7 @@
 namespace SolSEO\Analysis;
 
 use SolSEO\Content;
+use SolSEO\Content\Readers;
 use SolSEO\Context;
 use SolSEO\Meta;
 use SolSEO\Options;
@@ -119,6 +120,7 @@ class Paper {
 		);
 
 		$paper['keyword']    = trim( (string) $paper['keyword'] );
+		$paper['source']     = Readers::report( $paper['post_id'] );
 		$paper['text']       = Content::plain( $paper['content'] );
 		$paper['words']      = Text::words( $paper['text'] );
 		$paper['sentences']  = Text::sentences( $paper['text'] );

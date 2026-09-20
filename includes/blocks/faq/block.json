@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "solseo/faq",
+	"title": "Questions and answers",
+	"category": "text",
+	"icon": "editor-help",
+	"description": "A list of questions and answers, published as structured data so a search engine can read them.",
+	"keywords": [ "faq", "questions", "answers", "schema" ],
+	"textdomain": "solseo",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"spacing": { "margin": true, "padding": true }
+	},
+	"attributes": {
+		"heading": {
+			"type": "string",
+			"default": ""
+		},
+		"items": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		}
+	},
+	"editorScript": "solseo-block-faq",
+	"render": "file:./render.php"
+}

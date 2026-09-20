@@ -23,6 +23,9 @@ class Titles_Screen extends Screen {
 	 * Save a submitted tab.
 	 */
 	public static function load() {
+		$registered = Tabs::for_page( self::PAGE );
+		Tabs::load( $registered, Tabs::current( $registered ) );
+
 		if ( ! self::submitted( 'solseo_titles' ) ) {
 			return;
 		}
@@ -57,34 +60,70 @@ class Titles_Screen extends Screen {
 	public static function render() {
 		self::notice();
 
-		$tabs = array(
-			'general'    => __( 'General', 'solseo' ),
-			'post_types' => __( 'Post types', 'solseo' ),
-			'taxonomies' => __( 'Taxonomies', 'solseo' ),
-			'social'     => __( 'Social', 'solseo' ),
-		);
+		$tabs    = Tabs::for_page( self::PAGE );
+		$current = Tabs::current( $tabs );
 
-		$tab = self::current_tab( 'general' );
-		$tab = isset( $tabs[ $tab ] ) ? $tab : 'general';
+		self::tabs( self::PAGE, Tabs::labels( $tabs ), $current );
 
-		self::tabs( self::PAGE, $tabs, $tab );
-
+		/*
+		 * The form wraps the tab rather than the other way round, because
+		 * every tab on this screen saves through the same handler and the
+		 * same nonce. A tab an add-on adds here is inside that form too, and
+		 * gets the save button with nothing to wire up.
+		 */
 		echo '<form method="post" class="solseo-form">';
 		self::nonce( 'solseo_titles' );
 
-		self::view(
-			'titles-' . str_replace( '_', '-', $tab ),
-			array(
-				'options'   => Options::all(),
-				'variables' => Variables::catalogue(),
-			)
-		);
+		Tabs::render( $tabs, $current );
 
 		submit_button();
 
 		echo '</form>';
 
 		self::view( 'titles-variables', array( 'variables' => Variables::catalogue() ) );
+	}
+
+	/**
+	 * The site wide titles and the home page.
+	 */
+	public static function tab_general() {
+		self::tab_view( 'general' );
+	}
+
+	/**
+	 * One template per post type.
+	 */
+	public static function tab_post_types() {
+		self::tab_view( 'post-types' );
+	}
+
+	/**
+	 * One template per taxonomy.
+	 */
+	public static function tab_taxonomies() {
+		self::tab_view( 'taxonomies' );
+	}
+
+	/**
+	 * What a share looks like.
+	 */
+	public static function tab_social() {
+		self::tab_view( 'social' );
+	}
+
+	/**
+	 * Draw one of this screen's views.
+	 *
+	 * @param string $name View name after the titles- prefix.
+	 */
+	protected static function tab_view( $name ) {
+		self::view(
+			'titles-' . $name,
+			array(
+				'options'   => Options::all(),
+				'variables' => Variables::catalogue(),
+			)
+		);
 	}
 
 	/**
@@ -217,6 +256,8 @@ class Titles_Screen extends Screen {
 			'BlogPosting' => __( 'Blog post', 'solseo' ),
 			'NewsArticle' => __( 'News article', 'solseo' ),
 			'WebPage'     => __( 'Page', 'solseo' ),
+			'Service'     => __( 'Service', 'solseo' ),
+			'Course'      => __( 'Course', 'solseo' ),
 			'none'        => __( 'None', 'solseo' ),
 		);
 

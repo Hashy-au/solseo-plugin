@@ -152,7 +152,334 @@
 					analysis ? ( bands[ band ] || '' ) : strings.analysing
 				)
 			),
-			el( ui.Snippet, {} )
+			el( ui.Snippet, {} ),
+			readBy( analysis )
+		);
+	}
+
+	/**
+	 * One line saying where the text that was scored came from.
+	 *
+	 * Silent on an ordinary post, because "read with WordPress" is noise. It
+	 * speaks when a page builder drew the page, since a score that reads the
+	 * builder and a score that reads an empty post_content are different
+	 * numbers and the writer deserves to know which one this is.
+	 *
+	 * @param {Object} analysis The analysis, or null.
+	 * @return {Object|null} An element.
+	 */
+	function readBy( analysis ) {
+		var source = analysis && analysis.source ? analysis.source : null;
+
+		if ( ! source || ! source.slug || 'stored' === source.slug ) {
+			return null;
+		}
+
+		return el(
+			'p',
+			{ className: 'solseo-standing-source' },
+			source.note ? source.note : strings.readWith.replace( '%s', source.label )
+		);
+	}
+
+	/**
+	 * The internal links on this page that point at no page.
+	 *
+	 * The server works these out while it is scoring, because "does this
+	 * address resolve to something" is a question only the server can answer,
+	 * and it answers it without making a request, so the list keeps up with
+	 * typing. Nothing here is checked against anybody else's site.
+	 *
+	 * @param {Object} analysis The analysis, or null.
+	 * @return {Object|null} An element.
+	 */
+	function deadLinks( analysis ) {
+		var links = ( analysis && analysis.links ) || [];
+
+		if ( ! links.length ) {
+			return null;
+		}
+
+		return el(
+			'div',
+			{ className: 'solseo-dead-links' },
+			el( 'h3', null, strings.deadLinks ),
+			el(
+				'ul',
+				null,
+				links.map( function ( link ) {
+					return el(
+						'li',
+						{ key: link.path },
+						el( 'strong', null, link.text || strings.deadLinkNoText ),
+						' ',
+						el( 'code', null, link.href )
+					);
+				} )
+			),
+			el( 'p', { className: 'description' }, strings.deadLinksHelp )
+		);
+	}
+
+	/**
+	 * Anything else of theirs going for the same phrase.
+	 *
+	 * Two sentences, and they are different on purpose. Two pages on the same
+	 * side of the site are competing. A listing and an article are not, and
+	 * saying they are is how somebody learns to ignore this in a week.
+	 *
+	 * The keys read here are the keys the score route sends. There is no
+	 * JavaScript test runner in this plugin, so the PHP side pins them: a panel
+	 * reading a key nobody sends says nothing at all and looks like good news.
+	 *
+	 * @param {Object} analysis The analysis, or null.
+	 * @return {Object|null} An element.
+	 */
+	function duplicates( analysis ) {
+		var found = ( analysis && analysis.duplicates ) || {};
+		var competing = found.competing || [];
+		var alongside = found.alongside || [];
+		var names = [];
+
+		if ( ! competing.length && ! alongside.length ) {
+			return null;
+		}
+
+		( competing.length ? competing : alongside ).forEach( function ( one ) {
+			names.push( one.title );
+		} );
+
+		return el(
+			'p',
+			{ className: competing.length ? 'solseo-note solseo-note-warn' : 'solseo-note' },
+			( competing.length ? strings.duplicateWarn : strings.duplicateFine )
+				.replace( '%1$s', found.phrase || '' )
+				.replace( '%2$s', names.join( ', ' ) )
+		);
+	}
+
+	/**
+	 * The accessibility failures this writing causes.
+	 *
+	 * Content only, and the sentence underneath says so. A writer told the page
+	 * is fine who then finds out otherwise stops reading anything this says.
+	 *
+	 * @param {Object} props Keys: analysis.
+	 * @return {Object} An element.
+	 */
+	function Access( props ) {
+		var findings = ( props.analysis && props.analysis.a11y ) || [];
+
+		if ( ! props.analysis ) {
+			return el( 'p', { className: 'description' }, strings.analysing );
+		}
+
+		if ( ! findings.length ) {
+			return el( 'p', { className: 'description' }, strings.a11yClear );
+		}
+
+		return el(
+			'div',
+			{ className: 'solseo-a11y' },
+			el(
+				'ul',
+				null,
+				findings.map( function ( finding, index ) {
+					return el(
+						'li',
+						{ key: finding.rule + index, className: 'solseo-check solseo-status-poor' },
+						el( 'strong', null, finding.says ),
+						' ',
+						el( 'code', null, finding.element )
+					);
+				} )
+			),
+			el( 'p', { className: 'description' }, strings.a11yCovers )
+		);
+	}
+
+	/**
+	 * The pages that could link to this one.
+	 *
+	 * Its own request, made when this panel is opened rather than on the score
+	 * route, because finding these means reading every page that mentions the
+	 * phrase and the score route runs six hundred milliseconds after every
+	 * keystroke.
+	 *
+	 * @param {Object} props Keys: postId.
+	 * @return {Object} An element.
+	 */
+	function Suggest( props ) {
+		var state = wp.element.useState( { loading: true, rows: [], trouble: '' } );
+		var held = state[0];
+		var set = state[1];
+		var postId = props.postId;
+
+		var read = function () {
+			wp.apiFetch( { path: '/solseo/v1/suggestions?post_id=' + postId } )
+				.then( function ( answer ) {
+					set( { loading: false, rows: answer.suggestions || [], trouble: '' } );
+				} )
+				.catch( function () {
+					set( { loading: false, rows: [], trouble: strings.suggestFailed } );
+				} );
+		};
+
+		wp.element.useEffect( read, [ postId ] );
+
+		var accept = function ( sourceId ) {
+			set( { loading: true, rows: held.rows, trouble: '' } );
+
+			wp.apiFetch( {
+				path: '/solseo/v1/suggestions',
+				method: 'POST',
+				data: { post_id: postId, source_id: sourceId }
+			} )
+				.then( function ( answer ) {
+					set( { loading: false, rows: answer.suggestions || [], trouble: '' } );
+				} )
+				.catch( function ( error ) {
+					set( {
+						loading: false,
+						rows: held.rows,
+						trouble: ( error && error.message ) || strings.suggestFailed
+					} );
+				} );
+		};
+
+		if ( held.loading ) {
+			return el( 'p', { className: 'description' }, strings.analysing );
+		}
+
+		if ( ! held.rows.length ) {
+			return el(
+				'div',
+				null,
+				el( 'p', { className: 'description' }, strings.suggestNone ),
+				held.trouble ? el( 'p', { className: 'solseo-note solseo-note-warn' }, held.trouble ) : null
+			);
+		}
+
+		return el(
+			'div',
+			{ className: 'solseo-suggestions' },
+			el( 'p', { className: 'description' }, strings.suggestIntro ),
+			el(
+				'ul',
+				null,
+				held.rows.map( function ( row ) {
+					return el(
+						'li',
+						{ key: row.source_id },
+						el( 'strong', null, row.title ),
+						el( 'p', { className: 'description' }, row.sentence ),
+						el(
+							wp.components.Button,
+							{
+								variant: 'secondary',
+								isSecondary: true,
+								onClick: function () {
+									accept( row.source_id );
+								}
+							},
+							strings.suggestAdd.replace( '%s', row.anchor )
+						)
+					);
+				} )
+			),
+			el( 'p', { className: 'description' }, strings.suggestUndo ),
+			held.trouble ? el( 'p', { className: 'solseo-note solseo-note-warn' }, held.trouble ) : null
+		);
+	}
+
+	/**
+	 * What this page actually did in Google over the last twenty eight days.
+	 *
+	 * Its own request, made when the panel is opened, because it leaves this
+	 * server and the score route does not. The answer is kept for six hours
+	 * on the site's own server, so opening the same page twice in an
+	 * afternoon asks Google once.
+	 *
+	 * @param {Object} props Keys: postId.
+	 * @return {Object} An element.
+	 */
+	function SearchConsole( props ) {
+		var state = wp.element.useState( { loading: true, figures: null, trouble: '' } );
+		var held = state[0];
+		var set = state[1];
+		var postId = props.postId;
+
+		wp.element.useEffect( function () {
+			set( { loading: true, figures: null, trouble: '' } );
+
+			wp.apiFetch( { path: '/solseo/v1/search-console?post_id=' + postId } )
+				.then( function ( answer ) {
+					set( {
+						loading: false,
+						figures: answer && ! answer.trouble ? answer : null,
+						trouble: ( answer && answer.trouble ) || ''
+					} );
+				} )
+				.catch( function () {
+					set( { loading: false, figures: null, trouble: strings.gscFailed } );
+				} );
+		}, [ postId ] );
+
+		if ( held.loading ) {
+			return el( 'p', { className: 'description' }, strings.gscLoading );
+		}
+
+		if ( held.trouble ) {
+			return el( 'p', { className: 'solseo-note solseo-note-warn' }, held.trouble );
+		}
+
+		if ( ! held.figures || ! held.figures.has ) {
+			return el( 'p', { className: 'description' }, strings.gscNone );
+		}
+
+		var figures = held.figures;
+
+		return el(
+			'div',
+			{ className: 'solseo-gsc' },
+			el(
+				'ul',
+				{ className: 'solseo-plain-list' },
+				el( 'li', null, el( 'strong', null, String( figures.clicks ) ), ' ', strings.gscClicks ),
+				el( 'li', null, el( 'strong', null, String( figures.impressions ) ), ' ', strings.gscImpressions ),
+				el(
+					'li',
+					null,
+					el( 'strong', null, figures.position ? figures.position.toFixed( 1 ) : '0.0' ),
+					' ',
+					strings.gscPosition
+				)
+			),
+			el( 'h3', null, strings.gscQueries ),
+			figures.queries && figures.queries.length
+				? el(
+					'ul',
+					{ className: 'solseo-plain-list' },
+					figures.queries.map( function ( row ) {
+						return el(
+							'li',
+							{ key: row.query },
+							el( 'strong', null, row.query ),
+							' ',
+							el(
+								'span',
+								{ className: 'description' },
+								String( row.clicks ) + ' / ' + String( row.impressions ) + ' / ' + row.position.toFixed( 1 )
+							)
+						);
+					} )
+				)
+				: el( 'p', { className: 'description' }, strings.gscNoQueries ),
+			el(
+				'p',
+				{ className: 'description' },
+				strings.gscRange.replace( '%1$s', figures.from ).replace( '%2$s', figures.to )
+			)
 		);
 	}
 
@@ -188,6 +515,7 @@
 				label: strings.keyword,
 				help: strings.keywordHelp
 			} ),
+			duplicates( analysis ),
 			el( ui.Text, {
 				field: 'keywords',
 				label: strings.phrases,
@@ -213,7 +541,8 @@
 						return el( ui.Checks, { key: group.id, group: group } );
 					} )
 				)
-				: el( 'p', { className: 'description' }, strings.analysing )
+				: el( 'p', { className: 'description' }, strings.analysing ),
+			deadLinks( analysis )
 		);
 	}
 
@@ -272,6 +601,18 @@
 	 * there is one code path rather than ours and theirs.
 	 */
 	window.solseo.panels.register( { id: 'general', title: strings.general, order: 10, render: General, open: true } );
+	window.solseo.panels.register( { id: 'access', title: strings.a11yTitle, order: 15, render: Access } );
+	window.solseo.panels.register( { id: 'suggest', title: strings.suggestTitle, order: 18, render: Suggest } );
+
+	/*
+	 * Only when a Google account is connected. A panel that exists to say
+	 * "set this up somewhere else" is a panel everybody learns to skip, and
+	 * this one would sit above the two that do work.
+	 */
+	if ( data.searchConsole ) {
+		window.solseo.panels.register( { id: 'gsc', title: strings.gscTitle, order: 19, render: SearchConsole } );
+	}
+
 	window.solseo.panels.register( { id: 'social', title: strings.social, order: 20, render: Social } );
 	window.solseo.panels.register( { id: 'advanced', title: strings.advanced, order: 30, render: Advanced } );
 

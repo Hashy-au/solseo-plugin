@@ -25,6 +25,9 @@ class Redirects_Screen extends Screen {
 	 * Handle the forms and the row actions.
 	 */
 	public static function load() {
+		$tabs = Tabs::for_page( self::PAGE );
+		Tabs::load( $tabs, Tabs::current( $tabs ) );
+
 		if ( self::submitted( 'solseo_redirect_add' ) ) {
 			self::save_rule();
 		}
@@ -42,44 +45,62 @@ class Redirects_Screen extends Screen {
 	public static function render() {
 		self::notice();
 
-		$tabs = array(
-			'rules'     => __( 'Rules', 'solseo' ),
-			'not_found' => __( 'Found nothing', 'solseo' ),
+		$tabs    = Tabs::for_page( self::PAGE );
+		$current = Tabs::current( $tabs );
+
+		self::tabs( self::PAGE, Tabs::labels( $tabs ), $current );
+
+		Tabs::render( $tabs, $current );
+	}
+
+	/**
+	 * The rules, and the form that adds one.
+	 */
+	public static function tab_rules() {
+		self::view(
+			'redirects-rules',
+			array(
+				'rules'    => Manager::all( self::PER_PAGE, self::offset() ),
+				'total'    => Manager::count(),
+				'page'     => self::paged(),
+				'per_page' => self::PER_PAGE,
+				'prefill'  => self::prefill(),
+			)
 		);
+	}
 
-		$tab = self::current_tab( 'rules' );
-		$tab = isset( $tabs[ $tab ] ) ? $tab : 'rules';
-
-		self::tabs( self::PAGE, $tabs, $tab );
-
-		$page   = max( 1, (int) filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_NUMBER_INT ) );
-		$offset = ( $page - 1 ) * self::PER_PAGE;
-
-		if ( 'rules' === $tab ) {
-			self::view(
-				'redirects-rules',
-				array(
-					'rules'    => Manager::all( self::PER_PAGE, $offset ),
-					'total'    => Manager::count(),
-					'page'     => $page,
-					'per_page' => self::PER_PAGE,
-					'prefill'  => self::prefill(),
-				)
-			);
-
-			return;
-		}
-
+	/**
+	 * Every address that found nothing.
+	 */
+	public static function tab_not_found() {
 		self::view(
 			'redirects-log',
 			array(
-				'entries'  => Log::recent( self::PER_PAGE, $offset ),
+				'entries'  => Log::recent( self::PER_PAGE, self::offset() ),
 				'total'    => Log::count(),
-				'page'     => $page,
+				'page'     => self::paged(),
 				'per_page' => self::PER_PAGE,
 				'options'  => Options::all(),
 			)
 		);
+	}
+
+	/**
+	 * Which page of rows is being read.
+	 *
+	 * @return int
+	 */
+	protected static function paged() {
+		return max( 1, (int) filter_input( INPUT_GET, 'paged', FILTER_SANITIZE_NUMBER_INT ) );
+	}
+
+	/**
+	 * How many rows to step over for that page.
+	 *
+	 * @return int
+	 */
+	protected static function offset() {
+		return ( self::paged() - 1 ) * self::PER_PAGE;
 	}
 
 	/**

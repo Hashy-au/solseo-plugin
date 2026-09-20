@@ -858,6 +858,15 @@ td.solseo-wrap {
 	color: var(--solseo-muted);
 }
 
+/* Which reader produced the text that was scored. Absent on an ordinary page. */
+
+.solseo-standing-source {
+	margin: .6rem 0 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--solseo-muted);
+}
+
 /* The image picker, laid out down the page rather than across it. */
 
 .solseo-sidebar-image {
@@ -1130,4 +1139,127 @@ td.solseo-wrap {
 
 .solseo-robots-preview.is-stale {
 	opacity: .55;
+}
+
+/* The features switchboard. */
+
+.solseo-modules {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1rem 0 .75rem;
+}
+
+.solseo-modules tr.solseo-module + tr.solseo-module,
+.solseo-modules tr.solseo-module-core + tr.solseo-module {
+	border-top: 1px solid var(--solseo-line);
+}
+
+.solseo-modules td {
+	padding: .85rem 0;
+	vertical-align: top;
+}
+
+.solseo-module-switch {
+	width: 5.5rem;
+	padding-right: 1rem;
+}
+
+.solseo-modules .description {
+	margin: .25rem 0 0;
+	max-width: 60ch;
+}
+
+.solseo-module-cost {
+	margin: .4rem 0 0;
+	font-size: .85rem;
+	color: var(--solseo-muted, #6b6659);
+}
+
+.solseo-always {
+	display: inline-block;
+	font-size: .75rem;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: var(--solseo-muted, #6b6659);
+}
+
+.solseo-more-modules {
+	margin: 1rem 0 0;
+}
+
+/* The questions and answers block, in the editor only. The front of the site
+   gets semantic details and summary elements and no stylesheet from us. */
+
+.solseo-faq-edit__item {
+	border: 1px solid var(--solseo-line);
+	border-radius: 4px;
+	padding: .75rem 1rem;
+	margin-bottom: .75rem;
+}
+
+.solseo-faq-edit__question {
+	font-weight: 600;
+	margin: 0 0 .35rem;
+}
+
+.solseo-faq-edit__answer {
+	margin: 0 0 .5rem;
+}
+
+.solseo-faq-edit__note {
+	font-size: .85rem;
+	color: var(--solseo-muted, #6b6659);
+	margin: .75rem 0 0;
+	max-width: 60ch;
+}
+
+/* The checklist above the publish button. */
+
+.solseo-prepublish-list {
+	margin: .5rem 0 0;
+	padding-left: 1.1rem;
+	list-style: disc;
+}
+
+.solseo-prepublish-list li {
+	margin-bottom: .35rem;
+}
+
+.solseo-prepublish-note,
+.solseo-prepublish-more {
+	margin: 0;
+	font-size: .85rem;
+	color: var(--solseo-muted, #6b6659);
+}
+
+/*
+ * EVERY TABLE SITS IN A SCROLLER, AND THIS IS THE RULE THAT MAKES IT TRUE.
+ *
+ * `.table-wrap` is the hub's class, defined in hub/public/assets/css/app.css,
+ * and the plugins copied the markup convention across without the stylesheet.
+ * Twenty six wrappers in this plugin, the add-on and the Local pack carried a
+ * class that matched no rule anywhere, so a table wider than its card pushed
+ * the whole page sideways instead of scrolling inside its own box. Found at
+ * 1024 on the Local pack's Business tab, which ran 23px past the viewport.
+ *
+ * The scrollbar is drawn rather than left as a fading overlay, which is the
+ * same choice pro.css makes for `.solseo-table-wrap`.
+ */
+
+.table-wrap {
+	overflow-x: auto;
+	overflow-y: hidden;
+	max-width: 100%;
+	min-width: 0;
+	scrollbar-width: thin;
+	-webkit-overflow-scrolling: touch;
+}
+
+.table-wrap::-webkit-scrollbar {
+	height: 10px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+	background: #c3c7cd;
+	border-radius: 5px;
 }

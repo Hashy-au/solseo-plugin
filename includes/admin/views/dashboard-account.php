@@ -36,7 +36,7 @@ defined( 'ABSPATH' ) || exit;
 	<?php else : ?>
 		<p><?php esc_html_e( 'The plugin works on its own. Connecting a SolSEO account adds rank tracking and site audits from solseo.com.au.', 'solseo' ); ?></p>
 		<p>
-			<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-connect' ) ); ?>">
+			<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-settings&tab=connections' ) ); ?>">
 				<?php esc_html_e( 'Connect this site', 'solseo' ); ?>
 			</a>
 		</p>

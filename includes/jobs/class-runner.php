@@ -52,6 +52,8 @@ class Runner {
 			'import' => __NAMESPACE__ . '\\Import_Job',
 			'images' => __NAMESPACE__ . '\\Image_Job',
 			'score'  => __NAMESPACE__ . '\\Score_Job',
+			'crawl'  => 'SolSEO\\Crawl\\Crawler',
+			'media'  => 'SolSEO\\Media\\Report',
 		);
 
 		/**
@@ -350,7 +352,36 @@ class Runner {
 		$state['changed'] += isset( $result['changed'] ) ? (int) $result['changed'] : 0;
 		$state['chunk']    = (int) $state['full_chunk'];
 
+		/*
+		 * A job that turns up more work as it goes says so, and the total only
+		 * ever grows. The crawl does this: an address it was told to look at
+		 * redirects to one nobody had listed, and that one has to be looked at
+		 * too. Without this the bar reads "24 of 23 done", which is the sort of
+		 * thing that makes somebody stop believing the rest of the screen.
+		 */
+		if ( isset( $result['total'] ) ) {
+			$state['total'] = max( (int) $state['total'], (int) $result['total'] );
+		}
+
 		$state = self::record( $state, isset( $result['failed'] ) ? (array) $result['failed'] : array() );
+
+		/*
+		 * A chunk may stop its own job. Only one thing needs this today, which
+		 * is a crawl being told by the host that it is asking too often, and
+		 * that one has to stop rather than retry into a wall. It lands in the
+		 * same state the Stop button produces, so the work already done keeps
+		 * its place and the button says carry on, and the browser stops asking
+		 * for chunks because the status is no longer running.
+		 */
+		if ( ! empty( $result['halt'] ) ) {
+			$state['status'] = 'stopped';
+
+			if ( ! empty( $result['message'] ) ) {
+				$state['message'] = (string) $result['message'];
+			}
+
+			return $state;
+		}
 
 		if ( ! empty( $result['finished'] ) ) {
 			$state['status'] = 'verifying';

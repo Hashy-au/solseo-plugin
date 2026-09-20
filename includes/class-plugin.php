@@ -21,6 +21,7 @@ class Plugin {
 		Meta::register();
 		Breadcrumbs::init();
 		Redirects\Manager::init();
+		Redirects\Slug_Watch::init();
 		Hub\Connection::init();
 		Score_Keeper::init();
 
@@ -38,7 +39,16 @@ class Plugin {
 		 */
 		Frontend\Robots_Txt::init();
 		Jobs\Runner::init();
-		Links\Indexer::init();
+		Blocks::init();
+		Frontend\Faq::init();
+		Frontend\Llms_Txt::init();
+		Indexing\Submit::init();
+
+		/*
+		 * Everything that is not core. A module that is off is not booted, so
+		 * it adds no hook and costs the request nothing at all.
+		 */
+		Modules::boot( Modules::ANY );
 
 		/*
 		 * Outside the admin branch on purpose. WordPress runs the direct Site
@@ -74,8 +84,20 @@ class Plugin {
 		 * so the first version that has one goes and reads them. It books
 		 * itself a hundred at a time and stops when it runs out.
 		 */
-		if ( ! get_option( 'solseo_links_indexed' ) ) {
+		if ( Modules::enabled( 'links' ) && ! get_option( 'solseo_links_indexed' ) ) {
 			Links\Indexer::start_backfill( 0 );
+		}
+
+		/*
+		 * A regex redirect used to be stored with a slash glued to the front
+		 * of it, which made it match nothing while looking right on the Rules
+		 * tab. Rules already in the database are repaired once, and only the
+		 * ones that are provably dead. See Redirects\Manager for why that is
+		 * the whole set it is safe to touch (D-158.2).
+		 */
+		if ( ! get_option( 'solseo_redirect_regex_repaired' ) ) {
+			Redirects\Manager::repair_regex_rules();
+			update_option( 'solseo_redirect_regex_repaired', 1, false );
 		}
 	}
 }

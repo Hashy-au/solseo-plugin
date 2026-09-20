@@ -6,6 +6,8 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
 ?>
 <div class="solseo-widget">
 
@@ -77,7 +79,7 @@ defined( 'ABSPATH' ) || exit;
 		</p>
 	<?php else : ?>
 		<p class="solseo-widget-footer">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-connect' ) ); ?>"><?php esc_html_e( 'Connect a SolSEO account', 'solseo' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-settings&tab=connections' ) ); ?>"><?php esc_html_e( 'Connect a SolSEO account', 'solseo' ); ?></a>
 			<span class="description"><?php esc_html_e( 'for rank tracking and site audits', 'solseo' ); ?></span>
 		</p>
 	<?php endif; ?>

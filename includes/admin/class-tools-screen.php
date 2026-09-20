@@ -43,7 +43,8 @@ class Tools_Screen extends Screen {
 			self::go_back( self::PAGE, array( 'tab' => 'data' ) );
 		}
 
-		Robots_Tab::load();
+		$tabs = Tabs::for_page( self::PAGE );
+		Tabs::load( $tabs, Tabs::current( $tabs ) );
 	}
 
 	/**
@@ -52,53 +53,49 @@ class Tools_Screen extends Screen {
 	public static function render() {
 		self::notice();
 
-		$tabs = array(
-			'import' => __( 'Import', 'solseo' ),
-			'images' => __( 'Images', 'solseo' ),
-			'robots' => __( 'robots.txt', 'solseo' ),
-			'data'   => __( 'Data', 'solseo' ),
+		$tabs    = Tabs::for_page( self::PAGE );
+		$current = Tabs::current( $tabs );
+
+		self::tabs( self::PAGE, Tabs::labels( $tabs ), $current );
+
+		Tabs::render( $tabs, $current );
+	}
+
+	/**
+	 * Copy the fields from another SEO plugin.
+	 */
+	public static function tab_import() {
+		$prefix = self::chosen_source();
+
+		self::view(
+			'tools-import',
+			array(
+				'sources' => Import::sources(),
+				'chosen'  => $prefix,
+				'preview' => $prefix ? Import::preview( $prefix, 15 ) : array(),
+				'state'   => Runner::state( 'import' ),
+			)
 		);
+	}
 
-		$tab = self::current_tab( 'import' );
-		$tab = isset( $tabs[ $tab ] ) ? $tab : 'import';
+	/**
+	 * Alt text for the images that have none.
+	 */
+	public static function tab_images() {
+		self::view(
+			'tools-images',
+			array(
+				'missing' => Alt_Text::count_missing(),
+				'rows'    => Alt_Text::missing( 50 ),
+				'state'   => Runner::state( 'images' ),
+			)
+		);
+	}
 
-		self::tabs( self::PAGE, $tabs, $tab );
-
-		if ( 'import' === $tab ) {
-			$prefix = self::chosen_source();
-
-			self::view(
-				'tools-import',
-				array(
-					'sources' => Import::sources(),
-					'chosen'  => $prefix,
-					'preview' => $prefix ? Import::preview( $prefix, 15 ) : array(),
-					'state'   => Runner::state( 'import' ),
-				)
-			);
-
-			return;
-		}
-
-		if ( 'images' === $tab ) {
-			self::view(
-				'tools-images',
-				array(
-					'missing' => Alt_Text::count_missing(),
-					'rows'    => Alt_Text::missing( 50 ),
-					'state'   => Runner::state( 'images' ),
-				)
-			);
-
-			return;
-		}
-
-		if ( 'robots' === $tab ) {
-			Robots_Tab::render();
-
-			return;
-		}
-
+	/**
+	 * What happens to what we stored if the plugin is removed.
+	 */
+	public static function tab_data() {
 		self::view( 'tools-data', array( 'remove' => (bool) Options::get( 'remove_data' ) ) );
 	}
 

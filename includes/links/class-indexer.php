@@ -260,8 +260,7 @@ class Indexer {
 
 		$table = $wpdb->prefix . 'solseo_links';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$paths = $wpdb->get_col(
+		$paths = $wpdb->get_col( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT DISTINCT target_url FROM {$table}
@@ -284,8 +283,7 @@ class Indexer {
 
 		$table = $wpdb->prefix . 'solseo_links';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$orphans = $wpdb->get_col( "SELECT DISTINCT target_url FROM {$table} WHERE target_id = 0 LIMIT 500" );
+		$orphans = $wpdb->get_col( "SELECT DISTINCT target_url FROM {$table} WHERE target_id = 0 LIMIT 500" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 
 		$found = array();
 
@@ -369,8 +367,7 @@ class Indexer {
 
 		$table = $wpdb->prefix . 'solseo_links';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT target_id FROM {$table} WHERE source_id = %d AND target_id > 0", (int) $post_id ) );
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT target_id FROM {$table} WHERE source_id = %d AND target_id > 0", (int) $post_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 
 		return array_map( 'intval', (array) $ids );
 	}
@@ -386,8 +383,7 @@ class Indexer {
 
 		$table = $wpdb->prefix . 'solseo_links';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT source_id FROM {$table} WHERE target_id = %d", (int) $post_id ) );
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT source_id FROM {$table} WHERE target_id = %d", (int) $post_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 
 		return array_map( 'intval', (array) $ids );
 	}
@@ -403,8 +399,7 @@ class Indexer {
 		$table = $wpdb->prefix . 'solseo_links';
 
 		foreach ( $post_ids as $post_id ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE source_id = %d AND link_type = 'internal'", (int) $post_id ) );
+			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE source_id = %d AND link_type = 'internal'", (int) $post_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery,PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 
 			update_post_meta( $post_id, Counts::INTERNAL, $total );
 		}

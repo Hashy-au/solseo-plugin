@@ -170,7 +170,7 @@ abstract class Screen {
 	 * @param string $name Base name of the file in admin/views.
 	 * @param array  $data Read inside the view as $data.
 	 */
-	public static function view( $name, array $data = array() ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- the view reads $data. // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- the view reads $data. // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- the view reads $data.
+	public static function view( $name, array $data = array() ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- the view reads $data.
 		$file = SOLSEO_PATH . 'includes/admin/views/' . $name . '.php';
 
 		if ( is_readable( $file ) ) {

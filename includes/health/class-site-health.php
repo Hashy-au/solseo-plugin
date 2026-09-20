@@ -150,7 +150,7 @@ class Site_Health {
 						esc_url( home_url( '/sitemap.xml' ) )
 					)
 					: __( 'A sitemap is how a search engine learns about a new page without waiting to come across a link to it. Turn it on under SolSEO, Sitemap.', 'solseo' ),
-				'actions'    => self::action( admin_url( 'admin.php?page=solseo-sitemap' ), __( 'Open the Sitemap screen', 'solseo' ) ),
+				'actions'    => self::action( admin_url( 'admin.php?page=solseo-technical&tab=sitemap' ), __( 'Open the Sitemap screen', 'solseo' ) ),
 			)
 		);
 	}

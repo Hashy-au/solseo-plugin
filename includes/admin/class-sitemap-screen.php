@@ -16,8 +16,15 @@ defined( 'ABSPATH' ) || exit;
  * The Sitemap screen.
  */
 class Sitemap_Screen extends Screen {
+	/*
+	 * This was a menu item of its own until 1.4.0 and is now a tab on the
+	 * Technical screen, so PAGE is the screen it is drawn inside. The old
+	 * address still works: Menu::MOVED sends it here with this tab open.
+	 */
+	const PAGE = 'solseo-technical';
 
-	const PAGE = 'solseo-sitemap';
+	/** Which tab on that screen. */
+	const TAB = 'sitemap';
 
 	/**
 	 * Save the form.
@@ -43,7 +50,7 @@ class Sitemap_Screen extends Screen {
 		flush_rewrite_rules( false );
 
 		self::remember( __( 'Saved.', 'solseo' ) );
-		self::go_back( self::PAGE );
+		self::go_back( self::PAGE, array( 'tab' => self::TAB ) );
 	}
 
 	/**

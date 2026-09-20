@@ -176,20 +176,56 @@ class Meta {
 	 * @param array $values  Field name to value.
 	 */
 	public static function save( $post_id, array $values ) {
+		$changed = array();
+
 		foreach ( $values as $field => $value ) {
 			if ( ! isset( self::$fields[ $field ] ) ) {
 				continue;
 			}
 
 			$value = self::sanitise( $value, self::$fields[ $field ] );
+			$was   = self::get( $post_id, $field );
 
 			if ( '' === $value || array() === $value || ( 'bool' === self::$fields[ $field ] && ! $value ) ) {
 				delete_post_meta( $post_id, self::PREFIX . $field );
-				continue;
+			} else {
+				update_post_meta( $post_id, self::PREFIX . $field, $value );
 			}
 
-			update_post_meta( $post_id, self::PREFIX . $field, $value );
+			if ( $was !== $value ) {
+				$changed[] = $field;
+			}
 		}
+
+		if ( $changed ) {
+			self::log_change( $post_id, $changed );
+		}
+	}
+
+	/**
+	 * Note a field change in the change log.
+	 *
+	 * One entry per save rather than one per field, and a run that writes to
+	 * many posts merges into one entry, because a log with four hundred lines
+	 * in it is a log nobody opens.
+	 *
+	 * @param int   $post_id Post ID.
+	 * @param array $changed Field names that moved.
+	 */
+	protected static function log_change( $post_id, array $changed ) {
+		$title = get_the_title( $post_id );
+
+		Change_Log::record(
+			array(
+				'what'  => sprintf(
+					/* translators: %s: a list of field names. */
+					__( 'Changed %s', 'solseo' ),
+					implode( ', ', $changed )
+				),
+				'label' => $title ? $title : sprintf( '#%d', (int) $post_id ),
+				'merge' => 'meta:' . implode( ',', $changed ),
+			)
+		);
 	}
 
 	/**

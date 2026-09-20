@@ -1,0 +1,103 @@
+{
+  "_note": "Trimmed to the fields SolSEO reads, and built from the v5 runPagespeed reference rather than captured, because the keyless quota is exhausted (see quota-exceeded.json). Field names are the reference's own.",
+  "id": "https://example.test/",
+  "loadingExperience": {
+    "id": "https://example.test/",
+    "overall_category": "AVERAGE",
+    "metrics": {
+      "LARGEST_CONTENTFUL_PAINT_MS": { "percentile": 3100, "category": "AVERAGE" },
+      "CUMULATIVE_LAYOUT_SHIFT_SCORE": { "percentile": 4, "category": "GOOD" },
+      "INTERACTION_TO_NEXT_PAINT": { "percentile": 260, "category": "AVERAGE" },
+      "EXPERIMENTAL_TIME_TO_FIRST_BYTE": { "percentile": 1400, "category": "AVERAGE" }
+    }
+  },
+  "originLoadingExperience": {
+    "id": "https://example.test",
+    "overall_category": "SLOW",
+    "metrics": {
+      "LARGEST_CONTENTFUL_PAINT_MS": { "percentile": 4600, "category": "SLOW" },
+      "CUMULATIVE_LAYOUT_SHIFT_SCORE": { "percentile": 12, "category": "AVERAGE" },
+      "INTERACTION_TO_NEXT_PAINT": { "percentile": 420, "category": "SLOW" },
+      "EXPERIMENTAL_TIME_TO_FIRST_BYTE": { "percentile": 1900, "category": "SLOW" }
+    }
+  },
+  "lighthouseResult": {
+    "requestedUrl": "https://example.test/",
+    "finalUrl": "https://example.test/",
+    "categories": {
+      "performance": { "score": 0.42 }
+    },
+    "audits": {
+      "uses-optimized-images": {
+        "id": "uses-optimized-images",
+        "title": "Efficiently encode images",
+        "score": 0.16,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Potential savings of 2,400 KiB",
+        "details": {
+          "type": "opportunity",
+          "overallSavingsBytes": 2457600,
+          "items": [
+            { "url": "https://example.test/wp-content/uploads/2026/03/hero-banner.png", "totalBytes": 2510000, "wastedBytes": 2400000 },
+            { "url": "https://example.test/wp-content/themes/coastline/img/pattern.jpg", "totalBytes": 180000, "wastedBytes": 57600 }
+          ]
+        }
+      },
+      "unused-javascript": {
+        "id": "unused-javascript",
+        "title": "Reduce unused JavaScript",
+        "score": 0.31,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Potential savings of 310 KiB",
+        "details": {
+          "type": "opportunity",
+          "items": [
+            { "url": "https://example.test/wp-content/plugins/slider-deluxe/assets/slider.min.js", "totalBytes": 290000, "wastedBytes": 240000 },
+            { "url": "https://cdn.example-analytics.net/tag.js", "totalBytes": 90000, "wastedBytes": 70000 }
+          ]
+        }
+      },
+      "render-blocking-resources": {
+        "id": "render-blocking-resources",
+        "title": "Eliminate render-blocking resources",
+        "score": 0.5,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Potential savings of 780 ms",
+        "details": {
+          "type": "opportunity",
+          "items": [
+            { "url": "https://example.test/wp-includes/css/dist/block-library/style.min.css", "totalBytes": 68000, "wastedMs": 480 }
+          ]
+        }
+      },
+      "server-response-time": {
+        "id": "server-response-time",
+        "title": "Initial server response time was short",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "displayValue": "Root document took 210 ms",
+        "details": { "type": "opportunity", "items": [] }
+      },
+      "font-display": {
+        "id": "font-display",
+        "title": "All text remains visible during webfont loads",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "",
+        "details": {
+          "type": "table",
+          "items": [
+            { "url": "https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2", "wastedMs": 120 }
+          ]
+        }
+      },
+      "final-screenshot": {
+        "id": "final-screenshot",
+        "title": "Final Screenshot",
+        "score": null,
+        "scoreDisplayMode": "informative",
+        "details": { "type": "screenshot", "data": "data:image/jpeg;base64,ignored" }
+      }
+    }
+  }
+}

@@ -291,7 +291,7 @@ class Keyword_Checks extends Checks {
 	protected static function other_post_with_keyword( $keyword, $post_id ) {
 		global $wpdb;
 
-		$found = $wpdb->get_var(
+		$found = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- a meta_value lookup WP_Query cannot express, and a cache here would report a keyword clash that has just been resolved in another tab.
 			$wpdb->prepare(
 				"SELECT pm.post_id FROM {$wpdb->postmeta} pm
 				INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id

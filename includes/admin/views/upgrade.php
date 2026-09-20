@@ -8,9 +8,11 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
 ?>
 <div class="solseo-card solseo-card-wide">
-	<p><?php esc_html_e( 'Everything on this menu works without an account and without a key. SolSEO Pro is a separate add-on that installs beside this plugin and adds the two things below.', 'solseo' ); ?></p>
+	<p><?php esc_html_e( 'Everything on this menu works without an account and without a key. SolSEO Pro is a separate add-on that installs beside this plugin and adds what is listed below.', 'solseo' ); ?></p>
 </div>
 
 <div class="solseo-grid">
@@ -35,6 +37,6 @@ defined( 'ABSPATH' ) || exit;
 	</p>
 	<p class="description">
 		<?php esc_html_e( 'Rank tracking, site audits and monthly reports come from the SolSEO service rather than from the add-on.', 'solseo' ); ?>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-connect' ) ); ?>"><?php esc_html_e( 'The Connect screen covers that side.', 'solseo' ); ?></a>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=solseo-settings&tab=connections' ) ); ?>"><?php esc_html_e( 'The Connect screen covers that side.', 'solseo' ); ?></a>
 	</p>
 </div>

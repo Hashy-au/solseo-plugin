@@ -34,7 +34,7 @@ class Log {
 
 		$table = Install::table( 'not_found' );
 
-		return (array) $wpdb->get_results(
+		return (array) $wpdb->get_results( // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 			$wpdb->prepare( "SELECT * FROM {$table} ORDER BY last_seen DESC LIMIT %d OFFSET %d", $per_page, $offset ),
 			ARRAY_A
 		);
@@ -50,7 +50,7 @@ class Log {
 
 		$table = Install::table( 'not_found' );
 
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 	}
 
 	/**
@@ -72,6 +72,6 @@ class Log {
 
 		$table = Install::table( 'not_found' );
 
-		$wpdb->query( "TRUNCATE TABLE {$table}" );
+		$wpdb->query( "TRUNCATE TABLE {$table}" ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter -- the table name comes from Install::table(), which is $wpdb->prefix plus a literal, and a table name cannot be passed through prepare().
 	}
 }

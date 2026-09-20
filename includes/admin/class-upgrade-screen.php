@@ -64,7 +64,7 @@ class Upgrade_Screen extends Screen {
 		self::view(
 			'upgrade',
 			array(
-				'features' => self::features(),
+				'features' => self::listed(),
 				'url'      => self::URL,
 				'home'     => self::HOME,
 			)
@@ -72,15 +72,17 @@ class Upgrade_Screen extends Screen {
 	}
 
 	/**
-	 * What the add-on adds today.
+	 * What the add-on adds today, one entry per thing it actually does.
 	 *
-	 * Three entries, and they are the three things it does. A list that ran
-	 * ahead of the build would be the kind of dishonesty guideline 9 is about,
-	 * and the person reading it is one click from finding out.
+	 * A list that ran ahead of the build would be the kind of dishonesty
+	 * guideline 9 is about, and the person reading it is one click from finding
+	 * out. Public because a guard reads it: the sentence above the list on the
+	 * screen used to carry its own count, which went stale the moment a third
+	 * entry arrived (D-73.4).
 	 *
 	 * @return array
 	 */
-	protected static function features() {
+	public static function listed() {
 		return array(
 			array(
 				'title' => __( 'A score for every phrase', 'solseo' ),

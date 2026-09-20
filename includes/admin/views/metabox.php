@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- this file is included from inside Screen::view(), so what looks like a global here is local to that method.
+
 $edited    = $data['post'];
 $meta      = $data['meta'];
 $analysis  = $data['analysis'];
@@ -27,10 +29,31 @@ $permalink = get_permalink( $edited );
 		</div>
 	</div>
 
+	<?php if ( ! empty( $analysis['source']['slug'] ) && 'stored' !== $analysis['source']['slug'] ) : ?>
+		<p class="solseo-standing-source">
+			<?php
+
+			if ( '' !== $analysis['source']['note'] ) {
+				echo esc_html( $analysis['source']['note'] );
+			} else {
+				printf(
+					/* translators: %s: the page builder's name, such as Elementor. */
+					esc_html__( 'Scored on the page %s draws, not on what is stored.', 'solseo' ),
+					esc_html( $analysis['source']['label'] )
+				);
+			}
+
+			?>
+		</p>
+	<?php endif; ?>
+
 	<div class="solseo-box-tabs">
 		<button type="button" class="solseo-tab is-active" data-solseo-tab="general"><?php esc_html_e( 'General', 'solseo' ); ?></button>
 		<button type="button" class="solseo-tab" data-solseo-tab="social"><?php esc_html_e( 'Social', 'solseo' ); ?></button>
 		<button type="button" class="solseo-tab" data-solseo-tab="advanced"><?php esc_html_e( 'Advanced', 'solseo' ); ?></button>
+		<?php if ( ! empty( $data['google']['connected'] ) ) : ?>
+			<button type="button" class="solseo-tab" data-solseo-tab="search"><?php esc_html_e( 'In Google', 'solseo' ); ?></button>
+		<?php endif; ?>
 		<?php
 
 		/**
@@ -73,6 +96,16 @@ $permalink = get_permalink( $edited );
 		<div class="solseo-checks" data-solseo-checks>
 			<?php require __DIR__ . '/metabox-checks.php'; ?>
 		</div>
+
+		<?php
+		/*
+		 * Where the duplicate phrase warning and the accessibility findings are
+		 * drawn. Empty on load and filled by the same answer that paints the
+		 * checks above it, so the classic box says the same things the block
+		 * editor panel does without a second request.
+		 */
+		?>
+		<div class="solseo-notes" data-solseo-notes></div>
 
 		<?php
 
@@ -136,6 +169,23 @@ $permalink = get_permalink( $edited );
 			</select>
 		</p>
 	</div>
+
+	<?php if ( ! empty( $data['google']['connected'] ) ) : ?>
+		<?php
+		/*
+		 * Empty on purpose. Asking Google here would mean a call on every
+		 * editor load for a panel most people never open, and the answer is
+		 * worth six hours, not one page view. editor.js fills it the first
+		 * time somebody opens this tab, from the same route the block
+		 * editor's panel reads.
+		 */
+		?>
+		<div class="solseo-panel" data-solseo-panel="search">
+			<div data-solseo-search-console data-post="<?php echo (int) $edited->ID; ?>">
+				<p class="description"><?php esc_html_e( 'Asking Google about this page', 'solseo' ); ?></p>
+			</div>
+		</div>
+	<?php endif; ?>
 
 	<?php
 
