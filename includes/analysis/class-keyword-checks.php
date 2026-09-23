@@ -7,6 +7,8 @@
 
 namespace SolSEO\Analysis;
 
+use SolSEO\Contract;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -201,7 +203,12 @@ class Keyword_Checks extends Checks {
 		}
 
 		foreach ( $paper['images'] as $image ) {
-			if ( '' !== $image['alt'] && Text::contains( $paper['keyword'], $image['alt'] ) ) {
+			// Contract::alt_text() rather than $image['alt'] directly: alt is null
+			// when the attribute is absent, and '' !== null is true, which would
+			// hand null to a string function (D-207.2).
+			$alt = Contract::alt_text( $image );
+
+			if ( '' !== $alt && Text::contains( $paper['keyword'], $alt ) ) {
 				return self::result( 'keyword_in_alt', 2, self::GOOD, __( 'An image alt text contains the focus keyword.', 'solseo' ) );
 			}
 		}

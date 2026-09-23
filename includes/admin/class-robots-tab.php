@@ -144,8 +144,13 @@ class Robots_Tab extends Screen {
 	 * @return array Keyed by preset id, holding label, summary and body.
 	 */
 	public static function presets() {
-		$path  = (string) wp_parse_url( site_url(), PHP_URL_PATH );
-		$path  = untrailingslashit( $path );
+		// Both paths come from admin_url(), so a moved admin is still covered.
+		list( $admin_folder, $admin_ajax ) = Robots_Txt::admin_paths();
+
+		$admin_lines = '' === $admin_ajax
+			? ''
+			: 'Disallow: ' . $admin_folder . "\n" . 'Allow: ' . $admin_ajax . "\n";
+
 		$crawl = self::ai_agents();
 
 		$presets = array(
@@ -171,8 +176,7 @@ class Robots_Tab extends Screen {
 					. "# The two admin lines are repeated because naming a crawler means it\n"
 					. "# stops reading the User-agent: * group, including those two lines.\n"
 					. self::agent_lines( $crawl )
-					. 'Disallow: ' . $path . "/wp-admin/\n"
-					. 'Allow: ' . $path . "/wp-admin/admin-ajax.php\n",
+					. $admin_lines,
 			),
 
 			'maintenance' => array(

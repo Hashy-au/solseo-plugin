@@ -83,6 +83,40 @@ function solseo_code_only( $source ) {
 	return (string) preg_replace( '/\bfunction\s+&?\w+/', 'function x', $code );
 }
 
+/**
+ * A file's PHP with its comments taken out and everything else kept.
+ *
+ * THE OPPOSITE OF solseo_code_only(), AND BOTH ARE NEEDED. That one drops
+ * string literals and inline HTML along with the comments, because the guards
+ * that use it look for calls somebody must not make. The guards that use this
+ * one look for markup somebody must not write, and markup is a string literal
+ * or inline HTML and nothing else, so running those through the other helper is
+ * reading a file with the answer already removed. It passed on a sitemap
+ * transform carrying a style block, which is how that was found.
+ *
+ * It lives here rather than in a test file for the reason above: a helper that
+ * only exists once the file defining it has been reached is a fatal error
+ * waiting for an alphabet.
+ *
+ * @param string $source A PHP file.
+ * @return string
+ */
+function solseo_without_comments( $source ) {
+	$code = '';
+
+	foreach ( token_get_all( (string) $source ) as $token ) {
+		if ( ! is_array( $token ) ) {
+			$code .= $token;
+
+			continue;
+		}
+
+		$code .= in_array( $token[0], array( T_COMMENT, T_DOC_COMMENT ), true ) ? ' ' : $token[1];
+	}
+
+	return $code;
+}
+
 foreach ( glob( __DIR__ . '/test-*.php' ) as $file ) {
 	require $file;
 }

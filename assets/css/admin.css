@@ -1,8 +1,28 @@
 /**
  * SolSEO admin styles.
+ *
+ * NOTHING IN HERE MAY REACH WORDPRESS' OWN INTERFACE.
+ *
+ * The colours used to be declared on `:root`, which is the html element, so
+ * every screen that loaded this file carried nine SolSEO custom properties for
+ * the whole document to inherit: the dashboard, the posts list, the editor and
+ * anything any other plugin drew on them. Custom properties are inherited, so
+ * a name another plugin happened to share, or a core control that read one
+ * later, took its colour from us. The plugins directory calls that restyling
+ * the dashboard for everybody, and it is right.
+ *
+ * `[class*="solseo"]` is every element this plugin, the add-on and the packs
+ * draw, and nothing else. Declaring the properties there hands them to our own
+ * markup and its children by inheritance, and stops at the edge of it. It is
+ * one selector rather than a list of container classes that somebody has to
+ * remember to extend, and it is the same weight as a class, so no component
+ * rule below changes behaviour because of it.
+ *
+ * Every other selector in this file already begins with `.solseo`, and the one
+ * that did not, `.table-wrap`, is scoped the same way at the end.
  */
 
-:root {
+[class*="solseo"] {
 	--solseo-accent: #0c5b9c;
 	--solseo-accent-fill: #1c8ae6;
 	--solseo-ink: #23262e;
@@ -489,7 +509,7 @@ td.solseo-wrap {
 .solseo-status-skipped             { color: var(--solseo-muted); }
 .solseo-status-skipped .solseo-dot { background: var(--solseo-none); }
 
-/* The dashboard widget. */
+/* The dashboard widget. It is drawn in a column that can be 250px wide. */
 
 .solseo-widget-score {
 	display: flex;
@@ -506,8 +526,140 @@ td.solseo-wrap {
 	font-size: .82rem;
 }
 
-.solseo-widget-list {
+.solseo-widget-bar {
+	display: flex;
+	height: 6px;
+	margin-top: .5rem;
+	border-radius: 3px;
+	overflow: hidden;
+	background: #edeff2;
+}
+
+.solseo-widget-bar span {
+	display: block;
+	height: 100%;
+	background: var(--solseo-ring, var(--solseo-none));
+}
+
+.solseo-widget-stats {
+	display: grid;
+	grid-template-columns: repeat( auto-fit, minmax( 96px, 1fr ) );
+	gap: .5rem;
 	margin: 1rem 0 0;
+}
+
+.solseo-widget-stats li {
+	margin: 0;
+	padding: .5rem .6rem;
+	border: 1px solid var(--solseo-line);
+	border-radius: 5px;
+	min-width: 0;
+}
+
+.solseo-widget-stats li.is-warn {
+	border-color: var(--solseo-fair);
+}
+
+.solseo-widget-stats strong {
+	display: block;
+	font-size: 1.1rem;
+	line-height: 1.3;
+}
+
+.solseo-widget-stats span {
+	display: block;
+	color: var(--solseo-muted);
+	font-size: .78rem;
+}
+
+.solseo-widget-flags {
+	margin: 1rem 0 0;
+}
+
+.solseo-widget-flags li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: .45rem;
+	margin-bottom: .35rem;
+	font-size: .85rem;
+}
+
+.solseo-widget-flags .description {
+	color: var(--solseo-muted);
+	font-size: .78rem;
+}
+
+/*
+ * Each section of the panel is also a widget of its own, where its heading is
+ * the first thing in the box and has the widget's own title right above it.
+ */
+
+.solseo-widget > *:first-child {
+	margin-top: 0;
+}
+
+.solseo-widget h4 {
+	margin: 1.25rem 0 .5rem;
+	font-size: .8rem;
+	text-transform: uppercase;
+	letter-spacing: .05em;
+	color: var(--solseo-muted);
+}
+
+.solseo-widget-rows {
+	margin: 0;
+}
+
+.solseo-widget-rows li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: .5rem;
+	margin: 0;
+	padding: .4rem 0;
+	border-top: 1px solid var(--solseo-line);
+	font-size: .85rem;
+}
+
+.solseo-widget-rows li:first-child {
+	border-top: 0;
+}
+
+.solseo-widget-rows li > span:last-child {
+	display: inline-flex;
+	align-items: center;
+	gap: .4rem;
+	text-align: right;
+}
+
+.solseo-widget-rows .solseo-dot {
+	margin-top: 0;
+}
+
+/* The status classes colour a dot elsewhere. In a row of words, colour the words. */
+
+.solseo-widget-rows .solseo-status-good { color: var(--solseo-excellent); }
+.solseo-widget-rows .solseo-status-fair { color: var(--solseo-fair); }
+.solseo-widget-rows .solseo-status-poor { color: var(--solseo-poor); }
+
+.solseo-widget-rows em {
+	font-style: normal;
+	font-size: .78rem;
+	color: var(--solseo-muted);
+}
+
+.solseo-widget-rows em.is-up {
+	color: var(--solseo-excellent);
+}
+
+.solseo-widget-rows em.is-down {
+	color: var(--solseo-poor);
+}
+
+.solseo-widget-list {
+	margin: 0;
 }
 
 .solseo-widget-list li {
@@ -515,9 +667,13 @@ td.solseo-wrap {
 	align-items: center;
 	gap: .5rem;
 	margin-bottom: .35rem;
+	font-size: .85rem;
 }
 
 .solseo-widget-footer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .25rem 1rem;
 	margin: 1rem 0 0;
 	padding-top: .75rem;
 	border-top: 1px solid var(--solseo-line);
@@ -1244,9 +1400,17 @@ td.solseo-wrap {
  *
  * The scrollbar is drawn rather than left as a fading overlay, which is the
  * same choice pro.css makes for `.solseo-table-wrap`.
+ *
+ * SCOPED, BECAUSE THE NAME IS NOT OURS. `table-wrap` is a name anybody might
+ * pick, and this file loads on screens WordPress and other plugins drew, so an
+ * unscoped rule here would put a horizontal scrollbar on somebody else's table.
+ * The ancestor selector is the same one the colours use at the top of the file:
+ * every SolSEO wrapper, in this plugin and in the add-on and the packs, sits
+ * inside an element carrying a solseo class, and nothing of anybody else's
+ * does.
  */
 
-.table-wrap {
+[class*="solseo"] .table-wrap {
 	overflow-x: auto;
 	overflow-y: hidden;
 	max-width: 100%;
@@ -1255,11 +1419,11 @@ td.solseo-wrap {
 	-webkit-overflow-scrolling: touch;
 }
 
-.table-wrap::-webkit-scrollbar {
+[class*="solseo"] .table-wrap::-webkit-scrollbar {
 	height: 10px;
 }
 
-.table-wrap::-webkit-scrollbar-thumb {
+[class*="solseo"] .table-wrap::-webkit-scrollbar-thumb {
 	background: #c3c7cd;
 	border-radius: 5px;
 }

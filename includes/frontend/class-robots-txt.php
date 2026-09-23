@@ -91,6 +91,47 @@ class Robots_Txt {
 	}
 
 	/**
+	 * Where the admin lives, as a path a robots.txt line can carry.
+	 *
+	 * Asked of admin_url() rather than spelled out. /wp-admin/ is only the
+	 * usual answer, not the only one: a site can move the admin, and a site
+	 * in a subdirectory has the subdirectory in front of it. A rule naming a
+	 * folder that is not there tells a crawler nothing, and worse, the Allow
+	 * line that exists to keep admin-ajax.php reachable stops covering the
+	 * address it is about. Both lines below come from the same two calls, so
+	 * they cannot disagree with each other or with the site.
+	 *
+	 * Both come out of the one call, so the Allow line is always the file inside
+	 * the folder the Disallow line names. Neither is spelled out here: a
+	 * literal path is the bug this exists to remove, and a literal used as a
+	 * fallback is the same bug waiting for the day the fallback runs.
+	 *
+	 * An empty pair means the site answered with something no rule can be
+	 * written from, and the caller writes no rule rather than a wrong one. The
+	 * shape that matters is Disallow: /, which would take the whole site out of
+	 * every index, so nothing here may produce a bare slash.
+	 *
+	 * @return array Two paths: the admin folder, with a trailing slash, and
+	 *               admin-ajax.php. Both empty when neither can be worked out.
+	 */
+	public static function admin_paths() {
+		$nothing = array( '', '' );
+		$ajax    = (string) wp_parse_url( admin_url( 'admin-ajax.php' ), PHP_URL_PATH );
+
+		if ( '' === $ajax || '/' === $ajax ) {
+			return $nothing;
+		}
+
+		$folder = trailingslashit( str_replace( '\\', '/', dirname( $ajax ) ) );
+
+		if ( '/' === $folder ) {
+			return $nothing;
+		}
+
+		return array( $folder, $ajax );
+	}
+
+	/**
 	 * The lines WordPress writes before anybody adds to them.
 	 *
 	 * This tracks do_robots() in wp-includes/functions.php. We do not call it:
@@ -102,16 +143,19 @@ class Robots_Txt {
 	 * @return string
 	 */
 	public static function wordpress_default() {
-		$path = (string) wp_parse_url( site_url(), PHP_URL_PATH );
-		$path = untrailingslashit( $path );
-
 		if ( '0' === (string) get_option( 'blog_public', '1' ) ) {
 			return "User-agent: *\nDisallow: /\n";
 		}
 
+		list( $folder, $ajax ) = self::admin_paths();
+
+		if ( '' === $ajax ) {
+			return "User-agent: *\n";
+		}
+
 		return "User-agent: *\n"
-			. 'Disallow: ' . $path . "/wp-admin/\n"
-			. 'Allow: ' . $path . "/wp-admin/admin-ajax.php\n";
+			. 'Disallow: ' . $folder . "\n"
+			. 'Allow: ' . $ajax . "\n";
 	}
 
 	/**

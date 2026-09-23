@@ -23,13 +23,18 @@
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="solseo"/>
+			<property name="text_domain" type="array">
+				<element value="solseo"/>
+			</property>
 		</properties>
 	</rule>
 
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
-			<property name="prefixes" type="array" value="solseo,SolSEO"/>
+			<property name="prefixes" type="array">
+				<element value="solseo"/>
+				<element value="SolSEO"/>
+			</property>
 		</properties>
 		<!-- A view is included from inside a method, so its variables are not global. -->
 		<exclude-pattern>/includes/admin/views/*</exclude-pattern>

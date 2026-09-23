@@ -252,6 +252,19 @@ class Search_Console {
 
 		set_transient( $slot, $result, self::KEPT );
 
+		/**
+		 * A page's Search Console figures have just been read from Google.
+		 *
+		 * Fires once per read that reached Google, after the answer is kept,
+		 * and not when the kept copy answers. The Shop pack listens here for
+		 * the impressions a product page still gets after it runs out
+		 * (D-172.4).
+		 *
+		 * @param string $url    The page's address.
+		 * @param array  $result The figures, as page() returns them.
+		 */
+		do_action( 'solseo_gsc_page_read', $url, $result );
+
 		return $result;
 	}
 

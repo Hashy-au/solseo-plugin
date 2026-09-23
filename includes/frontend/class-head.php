@@ -79,7 +79,9 @@ class Head {
 	 * @return string
 	 */
 	protected static function title_in( array $context ) {
-		if ( 'singular' === $context['type'] || 'blog_home' === $context['type'] || ( 'front_page' === $context['type'] && $context['object_id'] ) ) {
+		$page_backed_archive = in_array( $context['type'], array( 'front_page', 'post_type_archive' ), true ) && $context['object_id'];
+
+		if ( 'singular' === $context['type'] || 'blog_home' === $context['type'] || $page_backed_archive ) {
 			$stored = Meta::get( $context['object_id'], 'title' );
 
 			if ( $stored ) {

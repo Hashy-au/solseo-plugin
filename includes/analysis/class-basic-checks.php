@@ -7,6 +7,8 @@
 
 namespace SolSEO\Analysis;
 
+use SolSEO\Contract;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -205,16 +207,48 @@ class Basic_Checks extends Checks {
 			return self::result( 'image_alt', 3, self::SKIPPED, __( 'There are no images to describe.', 'solseo' ) );
 		}
 
-		$missing = 0;
+		/*
+		 * MISSING AND EMPTY ARE COUNTED SEPARATELY (D-207.2).
+		 *
+		 * An absent alt is an image nobody described. An `alt=""` is somebody
+		 * saying the image carries nothing, which is correct on a logo or a
+		 * divider and is what this check's own advice tells people to write.
+		 * Counting the second as the first is what made the hub's audit report
+		 * 37 of 43 pages for one correctly marked header logo.
+		 *
+		 * An empty alt with no aria-hidden, no role="presentation" and no
+		 * enclosing link text is still worth mentioning, because a product
+		 * photo with a blank alt is a real loss. It lands as FAIR, never POOR:
+		 * it is a question, not a fault.
+		 */
+		$missing     = 0;
+		$unexplained = 0;
 
 		foreach ( $paper['images'] as $image ) {
-			if ( '' === trim( $image['alt'] ) ) {
+			if ( Contract::alt_is_missing( $image ) ) {
 				++$missing;
+			} elseif ( Contract::alt_is_unexplained_empty( $image ) ) {
+				++$unexplained;
 			}
 		}
 
-		if ( ! $missing ) {
+		if ( ! $missing && ! $unexplained ) {
 			return self::result( 'image_alt', 3, self::GOOD, __( 'Every image has alt text.', 'solseo' ) );
+		}
+
+		if ( ! $missing ) {
+			$note = sprintf(
+				/* translators: %d: number of images whose alt text is empty. */
+				_n(
+					'%d image has empty alt text. That is right for a decoration. If it shows the product, describe it.',
+					'%d images have empty alt text. That is right for a decoration. If they show the product, describe them.',
+					$unexplained,
+					'solseo'
+				),
+				$unexplained
+			);
+
+			return self::result( 'image_alt', 3, self::FAIR, $note );
 		}
 
 		$note = sprintf(

@@ -43,6 +43,7 @@ class Import {
 				'installed' => self::installed( $source['plugins'] ),
 				'found'     => $found,
 				'plugin'    => self::active_plugin( $source['plugins'] ),
+				'plugins'   => self::active_plugins( $source['plugins'] ),
 			);
 		}
 
@@ -68,9 +69,10 @@ class Import {
 			}
 
 			$out[ $prefix ] = array(
-				'name'   => self::name( $source['plugins'], $prefix ),
-				'plugin' => $plugin,
-				'found'  => self::count( $prefix ),
+				'name'    => self::name( $source['plugins'], $prefix ),
+				'plugin'  => $plugin,
+				'plugins' => self::active_plugins( $source['plugins'] ),
+				'found'   => self::count( $prefix ),
 			);
 		}
 
@@ -475,15 +477,39 @@ class Import {
 	 * @return string Plugin file, or an empty string.
 	 */
 	protected static function active_plugin( array $plugins ) {
+		$active = self::active_plugins( $plugins );
+
+		return $active ? $active[0] : '';
+	}
+
+	/**
+	 * Every one of a source's plugins that is switched on.
+	 *
+	 * A source is a family, not a file: a free plugin and the paid add-on that
+	 * loads on top of it. The add-on cannot run without the plugin underneath
+	 * it, so switching off the first file in the list and leaving the rest on
+	 * is how a site is taken down. A customer site answered every request with
+	 * a 500, front end and admin both, on 2026-09-20 because the offer to
+	 * switch a source off switched off one of the two files that were running.
+	 *
+	 * The order is the order they are defined in, which is the plugin first and
+	 * its add-ons after it.
+	 *
+	 * @param array $plugins Plugin files.
+	 * @return array Plugin files that are switched on.
+	 */
+	public static function active_plugins( array $plugins ) {
 		self::need_plugin_functions();
+
+		$out = array();
 
 		foreach ( $plugins as $plugin ) {
 			if ( is_plugin_active( $plugin ) ) {
-				return $plugin;
+				$out[] = $plugin;
 			}
 		}
 
-		return '';
+		return $out;
 	}
 
 	/**

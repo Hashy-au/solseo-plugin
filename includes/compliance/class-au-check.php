@@ -162,8 +162,8 @@ class AU_Check {
 		$check = array(
 			'id'           => 'contact',
 			'label'        => __( 'Contact details on the site', 'solseo' ),
-			'source'       => 'https://www.accc.gov.au/consumers/online-shopping',
-			'source_label' => __( 'ACCC, online shopping', 'solseo' ),
+			'source'       => 'https://www.accc.gov.au/consumers/buying-products-and-services/buying-online',
+			'source_label' => __( 'ACCC, buying online', 'solseo' ),
 		);
 
 		if ( empty( $facts['contact_page'] ) ) {
@@ -207,7 +207,7 @@ class AU_Check {
 		$check = array(
 			'id'           => 'abn',
 			'label'        => __( 'An ABN on the site', 'solseo' ),
-			'source'       => 'https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/tax-invoices',
+			'source'       => 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices',
 			'source_label' => __( 'ATO, tax invoices', 'solseo' ),
 		);
 
@@ -352,8 +352,8 @@ class AU_Check {
 		$check = array(
 			'id'           => 'delivery',
 			'label'        => __( 'How long delivery takes, in writing', 'solseo' ),
-			'source'       => 'https://www.accc.gov.au/consumers/buying-products-and-services/problem-with-a-product-or-service-you-bought',
-			'source_label' => __( 'ACCC, delivery and the consumer guarantees', 'solseo' ),
+			'source'       => 'https://www.accc.gov.au/consumers/buying-products-and-services/not-receiving-products-or-services-that-are-paid-for',
+			'source_label' => __( 'ACCC, products that do not arrive', 'solseo' ),
 		);
 
 		if ( empty( $facts['sells'] ) ) {

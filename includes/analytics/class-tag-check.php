@@ -97,7 +97,7 @@ class Tag_Check {
 				'label'  => __( 'Hotjar', 'solseo' ),
 				'loader' => '#static\.hotjar\.com/c/hotjar#i',
 				'id'     => '#hjid\s*:\s*(\d{5,})#i',
-				'docs'   => 'https://help.hotjar.com/hc/en-us/articles/115009336727',
+				'docs'   => 'https://help.hotjar.com/hc/en-us/sections/35766934221713-Installing-the-Hotjar-Tracking-Code',
 			),
 			'pinterest' => array(
 				'label'  => __( 'Pinterest tag', 'solseo' ),

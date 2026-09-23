@@ -839,7 +839,29 @@ class Google {
 	 */
 	protected static function refusal( $code, array $body ) {
 		$said = isset( $body['error'] ) ? (string) $body['error'] : '';
-		$why  = isset( $body['error_description'] ) ? (string) $body['error_description'] : '';
+
+		/*
+		 * TWO SERVICES ANSWER THIS METHOD AND THEY DO NOT USE THE SAME WORD.
+		 *
+		 * Google says error_description. The relay at solseo.com.au says
+		 * message, because that is the shape every other route on that hub
+		 * answers in. This method only read Google's word, so a refusal from
+		 * the relay arrived here with its sentence intact and was thrown away,
+		 * and what reached the screen was "refused with a 400: validation_failed":
+		 * the code, and nothing a person could act on.
+		 *
+		 * Thomas hit exactly that on 2026-09-20 connecting Search Console, and
+		 * the sentence that would have said which rule was broken had been
+		 * sitting in the response the whole time.
+		 */
+		$why = '';
+
+		foreach ( array( 'error_description', 'message' ) as $field ) {
+			if ( isset( $body[ $field ] ) && is_string( $body[ $field ] ) && '' !== $body[ $field ] ) {
+				$why = (string) $body[ $field ];
+				break;
+			}
+		}
 
 		if ( 'invalid_grant' === $said ) {
 			return new \WP_Error(

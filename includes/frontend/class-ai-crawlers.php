@@ -80,11 +80,20 @@ class Ai_Crawlers {
 				'cost'     => __( 'Citations, and the visitors that follow them.', 'solseo' ),
 				'source'   => 'https://docs.perplexity.ai/guides/bots',
 			),
+
+			/*
+			 * ByteDance publishes no crawler documentation in the way the
+			 * others here do. The address is the one its own user agent string
+			 * carries, which is the only thing ByteDance says about this
+			 * crawler in public. The page it used to point at,
+			 * developer.bytedance.com/docs/bytespider, is a 404 and has been
+			 * for some time, which is why a dead link went out in 2.0.0.
+			 */
 			'Bytespider'         => array(
 				'operator' => 'ByteDance',
 				'purpose'  => __( 'Collects text to train models.', 'solseo' ),
 				'cost'     => __( 'Nothing you can measure. It sends no visitors and is known for crawling heavily.', 'solseo' ),
-				'source'   => 'https://developer.bytedance.com/docs/bytespider',
+				'source'   => 'https://zhanzhang.toutiao.com/',
 			),
 			'Applebot-Extended'  => array(
 				'operator' => 'Apple',

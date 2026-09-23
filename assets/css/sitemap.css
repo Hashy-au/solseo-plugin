@@ -1,0 +1,43 @@
+/**
+ * The sitemap stylesheet.
+ *
+ * This is the only stylesheet in the plugin that is not enqueued. The XSL at
+ * /sitemap.xsl is a standalone document that a browser applies to the sitemap
+ * XML: there is no wp_head, no wp_enqueue_scripts and no WordPress request at
+ * all behind it, so the transform names this file in a link element the way any
+ * static page would. It used to be a style block written into the transform,
+ * which is the thing the directory asks plugins not to do.
+ */
+
+body {
+	font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+	margin: 2rem;
+	color: #23262e;
+}
+
+h1 {
+	font-size: 1.3rem;
+	margin: 0 0 1rem;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+th,
+td {
+	text-align: left;
+	padding: .5rem .75rem;
+	border-bottom: 1px solid #eae1d2;
+	font-size: .9rem;
+}
+
+th {
+	color: #6b6659;
+	font-weight: 600;
+}
+
+a {
+	color: #0c5b9c;
+}

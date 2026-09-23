@@ -6,7 +6,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'SOLSEO_VERSION', '1.0.0' );
+define( 'SOLSEO_VERSION', '2.0.0' );
 define( 'SOLSEO_PATH', dirname( __DIR__ ) . '/' );
 define( 'SOLSEO_URL', 'https://example.test/wp-content/plugins/solseo/' );
 define( 'SOLSEO_FILE', SOLSEO_PATH . 'solseo.php' );
@@ -581,11 +581,20 @@ function checked( $checked, $current = true, $display = true ) {
 /**
  * An admin address.
  *
+ * The base is a global so a test can put the admin somewhere other than the
+ * usual place. A WordPress in a subdirectory, or one whose admin folder has
+ * been moved, is exactly what the robots.txt rules have to survive, and a
+ * harness that can only be one site cannot ask that question.
+ *
  * @param string $path Path under wp-admin.
  * @return string
  */
 function admin_url( $path = '' ) {
-	return 'https://example.test/wp-admin/' . ltrim( (string) $path, '/' );
+	$base = isset( $GLOBALS['solseo_test_admin_url'] )
+		? (string) $GLOBALS['solseo_test_admin_url']
+		: 'https://example.test/wp-admin/';
+
+	return $base . ltrim( (string) $path, '/' );
 }
 
 /**
@@ -645,6 +654,59 @@ function remove_all_filters( $tag ) {
  * @param int      $args     Accepted arguments.
  */
 function add_action( $tag, $callback, $priority = 10, $args = 1 ) {
+}
+
+$GLOBALS['solseo_test_actions'] = array();
+$GLOBALS['solseo_test_removed'] = array();
+
+/**
+ * Fire an action. Nothing listens, because add_action above keeps nothing,
+ * but every firing is written down so a test can prove a hook fired, how
+ * many times, and with what.
+ *
+ * @param string $tag     Action name.
+ * @param mixed  ...$args Arguments.
+ */
+function do_action( $tag, ...$args ) {
+	$GLOBALS['solseo_test_actions'][] = array(
+		'tag'  => $tag,
+		'args' => $args,
+	);
+}
+
+/**
+ * Every firing of one action so far.
+ *
+ * @param string $tag Action name.
+ * @return array
+ */
+function solseo_test_actions_fired( $tag ) {
+	return array_values(
+		array_filter(
+			$GLOBALS['solseo_test_actions'],
+			function ( $fired ) use ( $tag ) {
+				return $fired['tag'] === $tag;
+			}
+		)
+	);
+}
+
+/**
+ * Unhook a callback. Written down rather than done, for the same reason.
+ *
+ * @param string   $tag      Action name.
+ * @param callable $callback Callback.
+ * @param int      $priority Priority.
+ * @return bool
+ */
+function remove_action( $tag, $callback, $priority = 10 ) {
+	$GLOBALS['solseo_test_removed'][] = array(
+		'tag'      => $tag,
+		'callback' => $callback,
+		'priority' => (int) $priority,
+	);
+
+	return true;
 }
 
 /**
@@ -1183,11 +1245,54 @@ function absint( $value ) {
 /**
  * JSON, without the options WordPress adds.
  *
+ * The flags are carried through rather than dropped. A guard on the structured
+ * data asks whether a closing script tag in a title survives encoding, and a
+ * stub that ignored the flags would answer that question about the stub.
+ *
  * @param mixed $value Any value.
+ * @param int   $flags Encoding flags.
+ * @param int   $depth How deep to go.
  * @return string
  */
-function wp_json_encode( $value ) {
-	return (string) json_encode( $value ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+function wp_json_encode( $value, $flags = 0, $depth = 512 ) {
+	return (string) json_encode( $value, (int) $flags, (int) $depth ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+}
+
+/**
+ * The script tag WordPress builds for inline code.
+ *
+ * Tracks wp_get_inline_script_tag(), including the line that strips the comment
+ * and CDATA wrappers older themes used, because that strip is the one thing in
+ * there that could touch a JSON-LD payload.
+ *
+ * @param string $data       What goes inside the tag.
+ * @param array  $attributes Tag attributes.
+ * @return string
+ */
+function wp_get_inline_script_tag( $data, $attributes = array() ) {
+	$printed = '';
+
+	foreach ( (array) $attributes as $name => $value ) {
+		if ( false === $value ) {
+			continue;
+		}
+
+		$printed .= true === $value ? ' ' . $name : ' ' . $name . '="' . esc_attr( $value ) . '"';
+	}
+
+	$data = trim( (string) preg_replace( '#(?:<!--|//\s*<!\[CDATA\[)\s*|\s*(?://\s*\]\]>|-->)#', '', (string) $data ) );
+
+	return sprintf( "<script%s>\n%s\n</script>\n", $printed, $data );
+}
+
+/**
+ * Print what wp_get_inline_script_tag() builds.
+ *
+ * @param string $data       What goes inside the tag.
+ * @param array  $attributes Tag attributes.
+ */
+function wp_print_inline_script_tag( $data, $attributes = array() ) {
+	echo wp_get_inline_script_tag( $data, $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above.
 }
 
 /**
@@ -1219,4 +1324,26 @@ function esc_attr( $text ) {
  */
 function esc_textarea( $text ) {
 	return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+}
+
+/**
+ * The screen object WordPress hands a meta box filter.
+ */
+class SolSEO_Test_Screen {
+
+	/**
+	 * Screen id.
+	 *
+	 * @var string
+	 */
+	public $id;
+
+	/**
+	 * Build one.
+	 *
+	 * @param string $id Screen id.
+	 */
+	public function __construct( $id ) {
+		$this->id = $id;
+	}
 }

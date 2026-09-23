@@ -16,6 +16,18 @@ $solseo_rows    = $data['preview'];
 $solseo_ran      = $solseo_chosen && 'done' === $solseo_state['status'] && isset( $solseo_state['args']['source'] ) && $solseo_state['args']['source'] === $solseo_chosen;
 $solseo_clean    = $solseo_ran && $solseo_state['verified'] && ! $solseo_state['failed_total'];
 $solseo_can_stop = $solseo_source && $solseo_source['plugin'] && current_user_can( 'activate_plugins' );
+
+/*
+ * Everything in the family that is running, not just the first file. An add-on
+ * left on with the plugin under it switched off fatals the site on the next
+ * request.
+ */
+$solseo_stop_files = $solseo_source && ! empty( $solseo_source['plugins'] ) ? (array) $solseo_source['plugins'] : array();
+$solseo_also       = array();
+
+foreach ( array_slice( $solseo_stop_files, 1 ) as $solseo_stop_file ) {
+	$solseo_also[] = \SolSEO\Tools\Import::name( array( $solseo_stop_file ), '' );
+}
 ?>
 <div class="solseo-card solseo-card-wide">
 
@@ -158,12 +170,27 @@ $solseo_can_stop = $solseo_source && $solseo_source['plugin'] && current_user_ca
 						?>
 					</p>
 
+					<?php if ( $solseo_also ) : ?>
+						<p>
+							<?php
+							printf(
+								/* translators: 1: the add-ons that go off too, 2: the name of the other plugin. */
+								esc_html__( '%1$s goes off with it, because it cannot run with %2$s switched off.', 'solseo' ),
+								'<strong>' . esc_html( implode( ', ', $solseo_also ) ) . '</strong>',
+								esc_html( $solseo_source['name'] )
+							);
+							?>
+						</p>
+					<?php endif; ?>
+
 					<form
 						method="post"
-						data-solseo-confirm="<?php echo esc_attr( sprintf( /* translators: %s: the name of the other plugin. */ __( 'Switch off %s? Nothing belonging to it is deleted. Every field it stores stays where it is, and you can switch it back on from the Plugins screen at any time.', 'solseo' ), $solseo_source['name'] ) ); ?>"
+						data-solseo-confirm="<?php echo esc_attr( sprintf( /* translators: %s: the name of the other plugin. */ __( 'Switch off %s? Nothing belonging to it is deleted. Every field it stores stays where it is, and you can switch it back on from the Plugins screen at any time.', 'solseo' ), $solseo_also ? $solseo_source['name'] . ' and ' . implode( ', ', $solseo_also ) : $solseo_source['name'] ) ); ?>"
 					>
 						<?php wp_nonce_field( 'solseo_deactivate', '_solseo_nonce' ); ?>
-						<input type="hidden" name="solseo_deactivate" value="<?php echo esc_attr( $solseo_source['plugin'] ); ?>">
+						<?php foreach ( $solseo_stop_files as $solseo_stop_file ) : ?>
+							<input type="hidden" name="solseo_deactivate[]" value="<?php echo esc_attr( $solseo_stop_file ); ?>">
+						<?php endforeach; ?>
 
 						<p>
 							<button type="submit" class="button button-primary">

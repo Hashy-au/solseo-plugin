@@ -143,23 +143,41 @@ class Tools_Screen extends Screen {
 			self::go_back( self::PAGE );
 		}
 
-		$plugin = isset( $_POST['solseo_deactivate'] ) ? sanitize_text_field( wp_unslash( $_POST['solseo_deactivate'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- the nonce is checked above, and every value is sanitised and then matched against a fixed list below.
+		$posted = isset( $_POST['solseo_deactivate'] ) ? wp_unslash( $_POST['solseo_deactivate'] ) : array();
+		$posted = is_array( $posted ) ? $posted : array( $posted );
+		$known  = Import::known_plugins();
+		$files  = array();
 
-		if ( ! in_array( $plugin, Import::known_plugins(), true ) ) {
-			self::remember( __( 'That is not a plugin this screen knows about.', 'solseo' ), 'error' );
-			self::go_back( self::PAGE );
+		foreach ( $posted as $one ) {
+			$one = sanitize_text_field( (string) $one );
+
+			if ( ! in_array( $one, $known, true ) ) {
+				self::remember( __( 'That is not a plugin this screen knows about.', 'solseo' ), 'error' );
+				self::go_back( self::PAGE );
+			}
+
+			$files[] = $one;
 		}
 
 		if ( ! function_exists( 'deactivate_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		if ( ! is_plugin_active( $plugin ) ) {
+		$files = array_values( array_filter( $files, 'is_plugin_active' ) );
+
+		if ( ! $files ) {
 			self::remember( __( 'That plugin is already switched off.', 'solseo' ) );
 			self::go_back( self::PAGE );
 		}
 
-		deactivate_plugins( $plugin, false, false );
+		/*
+		 * All of them, in one call. A paid add-on cannot run with the plugin it
+		 * sits on top of switched off, so switching off one of a pair and
+		 * leaving the other on takes the site down on the next request, admin
+		 * included. That is what happened on a customer site on 2026-09-20.
+		 */
+		deactivate_plugins( $files, false, false );
 
 		/*
 		 * Written down rather than remembered in a cache or carried in the
@@ -176,8 +194,9 @@ class Tools_Screen extends Screen {
 		update_option(
 			self::OFF_OPTION,
 			array(
-				'plugin' => $plugin,
-				'at'     => time(),
+				'plugin'  => $files[0],
+				'plugins' => $files,
+				'at'      => time(),
 			),
 			false
 		);

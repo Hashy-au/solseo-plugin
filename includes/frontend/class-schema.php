@@ -33,10 +33,136 @@ class Schema {
 		}
 
 		add_action( 'wp_head', array( __CLASS__, 'render' ), 10 );
+		add_action( 'wp', array( __CLASS__, 'replace_woo' ), 10 );
+	}
+
+	/**
+	 * The constants the other SEO plugins define when they are loaded.
+	 *
+	 * Each of them publishes an Organization or WebSite graph of its own, so
+	 * a site running one beside this plugin is describing itself twice. The
+	 * names live here and nowhere a person reads: the sentence on the screen
+	 * says "another SEO plugin".
+	 *
+	 * @var string[]
+	 */
+	const RIVAL_CONSTANTS = array(
+		'WPSEO_VERSION',
+		'RANK_MATH_VERSION',
+		'AIOSEO_VERSION',
+		'SEOPRESS_VERSION',
+	);
+
+	/**
+	 * Whether another SEO plugin that publishes its own graph is active.
+	 *
+	 * Asked afresh every time rather than cached, so the answer changes the
+	 * moment the other plugin is switched off. The packs ask this before
+	 * merging into the publisher node.
+	 *
+	 * @return bool
+	 */
+	public static function rival_active() {
+		foreach ( self::RIVAL_CONSTANTS as $constant ) {
+			if ( defined( $constant ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The one line the settings screen shows when a rival is publishing too.
+	 *
+	 * @return string Empty when there is nothing to say.
+	 */
+	public static function rival_notice() {
+		if ( ! self::rival_active() ) {
+			return '';
+		}
+
+		return __( 'Another SEO plugin is also publishing schema on this site. Turn off one of them so search engines see one description of your business.', 'solseo' );
+	}
+
+	/**
+	 * Whether this plugin's Product node replaces WooCommerce's on this view.
+	 *
+	 * True only when structured data is on, the view is a single product,
+	 * the main entity resolves to a Product, WooCommerce is loaded, and
+	 * nothing has asked to keep WooCommerce's through the filter.
+	 *
+	 * @param array $context View context.
+	 * @return bool
+	 */
+	public static function replaces_woo( array $context ) {
+		if ( ! Options::get( 'schema_enabled' ) || ! function_exists( 'WC' ) ) {
+			return false;
+		}
+
+		if ( 'singular' !== $context['type'] || 'product' !== $context['post_type'] || empty( $context['object_id'] ) ) {
+			return false;
+		}
+
+		if ( 'Product' !== self::main_type( $context ) || ! function_exists( 'wc_get_product' ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter whether SolSEO's Product node replaces WooCommerce's.
+		 *
+		 * WooCommerce prints its own Product entity in the footer of every
+		 * single product page. Two Product entities for one page make a
+		 * search engine choose, so by default only this plugin's is left.
+		 * Return false to keep WooCommerce's beside it.
+		 *
+		 * @param bool  $replace True to unhook WooCommerce's product data.
+		 * @param array $context View context.
+		 */
+		return (bool) apply_filters( 'solseo_schema_replace_woo', true, $context );
+	}
+
+	/**
+	 * Unhook WooCommerce's Product structured data when ours stands in for it.
+	 *
+	 * Runs on `wp`: WooCommerce builds WC()->structured_data on init at
+	 * priority 0, and which page this is cannot be known before the query.
+	 *
+	 * @param array|null $context View context, or null for the current one.
+	 */
+	public static function replace_woo( $context = null ) {
+		$context = is_array( $context ) ? $context : Context::current();
+
+		if ( ! self::replaces_woo( $context ) ) {
+			return;
+		}
+
+		$woo = WC();
+
+		if ( ! is_object( $woo ) || empty( $woo->structured_data ) ) {
+			return;
+		}
+
+		remove_action( 'woocommerce_single_product_summary', array( $woo->structured_data, 'generate_product_data' ), 60 );
 	}
 
 	/**
 	 * Print the graph.
+	 *
+	 * WHY THE ENCODING FLAGS ARE WHAT THEY ARE. A graph is built out of titles,
+	 * descriptions and product fields, which is to say out of whatever anybody
+	 * with an editor's account typed. JSON_UNESCAPED_SLASHES was here to keep
+	 * the addresses readable, and the cost of it was that a forward slash
+	 * survived encoding, so a title holding the six characters of a closing
+	 * script tag closed this element and everything after it was markup. It is
+	 * gone, which turns every slash into \/, and JSON_HEX_TAG turns < and > into
+	 * < and > as well, so neither half of a tag can be written. Both
+	 * are ordinary JSON escapes: a parser reads the same graph either way, and
+	 * Google's own testing tool reads it unchanged.
+	 *
+	 * The tag itself goes out through wp_print_inline_script_tag(), which is
+	 * where WordPress adds a content security policy nonce when a site sets
+	 * one, so a site with a policy keeps its structured data.
 	 */
 	public static function render() {
 		$graph = self::graph();
@@ -50,7 +176,13 @@ class Schema {
 			'@graph'   => array_values( $graph ),
 		);
 
-		echo '<script type="application/ld+json">' . wp_json_encode( $document, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "</script>\n";
+		$json = wp_json_encode( $document, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG );
+
+		if ( false === $json ) {
+			return;
+		}
+
+		wp_print_inline_script_tag( $json, array( 'type' => 'application/ld+json' ) );
 	}
 
 	/**
@@ -65,13 +197,19 @@ class Schema {
 			self::website(),
 		);
 
-		$page = self::web_page( $context );
+		/*
+		 * The trail is built before the page node because the page only
+		 * points at a BreadcrumbList that is in the graph. On the front page
+		 * there is no trail, and a WebPage whose breadcrumb names an id nothing
+		 * else carries is read by Google as an empty BreadcrumbList, which
+		 * Search Console reports as a missing itemListElement.
+		 */
+		$trail = self::breadcrumbs();
+		$page  = self::web_page( $context, ! empty( $trail ) );
 
 		if ( $page ) {
 			$graph[] = $page;
 		}
-
-		$trail = self::breadcrumbs();
 
 		if ( $trail ) {
 			$graph[] = $trail;
@@ -188,10 +326,11 @@ class Schema {
 	/**
 	 * The page node.
 	 *
-	 * @param array $context View context.
+	 * @param array $context        View context.
+	 * @param bool  $has_breadcrumb Whether a BreadcrumbList node is in the graph.
 	 * @return array|null
 	 */
-	protected static function web_page( array $context ) {
+	protected static function web_page( array $context, $has_breadcrumb = false ) {
 		$url = self::current_url();
 
 		if ( ! $url ) {
@@ -217,7 +356,7 @@ class Schema {
 			$node['dateModified']  = get_the_modified_date( DATE_W3C, $context['object_id'] );
 		}
 
-		if ( Breadcrumbs::enabled() ) {
+		if ( $has_breadcrumb ) {
 			$node['breadcrumb'] = array( '@id' => $url . '#breadcrumb' );
 		}
 
@@ -273,12 +412,7 @@ class Schema {
 	 * @return array|null
 	 */
 	protected static function main_entity( array $context ) {
-		$type = Meta::get( $context['object_id'], 'schema_type' );
-
-		if ( ! $type ) {
-			$settings = Options::post_type( $context['post_type'] );
-			$type     = $settings['schema'];
-		}
+		$type = self::main_type( $context );
 
 		if ( 'none' === $type || 'WebPage' === $type ) {
 			return null;
@@ -293,6 +427,24 @@ class Schema {
 		}
 
 		return self::article( $context['object_id'], $type );
+	}
+
+	/**
+	 * The schema type the main entity resolves to: the page's own, else the
+	 * post type's default.
+	 *
+	 * @param array $context View context.
+	 * @return string
+	 */
+	protected static function main_type( array $context ) {
+		$type = Meta::get( $context['object_id'], 'schema_type' );
+
+		if ( ! $type ) {
+			$settings = Options::post_type( $context['post_type'] );
+			$type     = $settings['schema'];
+		}
+
+		return (string) $type;
 	}
 
 	/**

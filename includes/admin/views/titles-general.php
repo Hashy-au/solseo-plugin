@@ -67,6 +67,10 @@ $options = $data['options'];
 		<td>
 			<label><input type="checkbox" name="solseo[schema_enabled]" value="1" <?php checked( $options['schema_enabled'] ); ?>> <?php esc_html_e( 'Describe pages to search engines in JSON-LD', 'solseo' ); ?></label><br>
 			<label><input type="checkbox" name="solseo[schema_search_action]" value="1" <?php checked( $options['schema_search_action'] ); ?>> <?php esc_html_e( 'Offer the site search box in results', 'solseo' ); ?></label>
+			<?php $rival_notice = \SolSEO\Frontend\Schema::rival_notice(); ?>
+			<?php if ( '' !== $rival_notice ) : ?>
+				<p class="description solseo-rival-schema"><?php echo esc_html( $rival_notice ); ?></p>
+			<?php endif; ?>
 		</td>
 	</tr>
 	<tr>

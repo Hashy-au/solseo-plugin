@@ -163,6 +163,19 @@ class Connection {
 		$overview = Client::overview();
 
 		if ( is_array( $overview ) ) {
+			/*
+			 * THE MONITOR READING RIDES ALONG WITH THE OVERVIEW, because the
+			 * dashboard widget draws both and a widget must not make a request
+			 * while somebody waits for a screen. Both were measured before the
+			 * question was asked, so the only cost of asking twice a day is two
+			 * requests twice a day.
+			 */
+			$monitor = Client::monitor();
+
+			if ( is_array( $monitor ) ) {
+				$overview['monitor'] = $monitor;
+			}
+
 			set_transient( 'solseo_hub_overview', $overview, 6 * HOUR_IN_SECONDS );
 		}
 

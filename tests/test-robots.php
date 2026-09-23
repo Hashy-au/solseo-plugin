@@ -231,3 +231,130 @@ solseo_assert(
 	false !== strpos( $solseo_preset_result, 'User-agent: GPTBot' ),
 	'with the named crawlers in a group of their own'
 );
+
+/*
+ * THE ADMIN PATH IS ASKED FOR, NOT SPELLED OUT.
+ *
+ * `/wp-admin/` is the usual answer and not the only one. A site can move its
+ * admin folder, and a site in a subdirectory carries the subdirectory in front
+ * of it, so a rule with the path written into it disallows a folder that is not
+ * there and, worse, stops the Allow line covering the address it exists for.
+ * The WordPress.org review of solseo-2.0.0 named both places this was written
+ * out. Both now come from admin_url(), which is what every plugin is told to
+ * use for exactly this.
+ *
+ * THE ALLOWLIST IS EMPTY. Nothing in this plugin may name that path itself.
+ */
+$solseo_admin_files = array_merge(
+	glob( SOLSEO_PATH . 'includes/*.php' ),
+	glob( SOLSEO_PATH . 'includes/*/*.php' ),
+	glob( SOLSEO_PATH . 'includes/*/*/*.php' ),
+	glob( SOLSEO_PATH . 'assets/js/*.js' )
+);
+
+solseo_assert( count( $solseo_admin_files ) > 100, 'the guard is reading the whole plugin' );
+
+$solseo_hardcoded = array();
+
+foreach ( $solseo_admin_files as $solseo_admin_file ) {
+	$solseo_body = (string) file_get_contents( $solseo_admin_file );
+	$solseo_body = (string) preg_replace( '#/\*.*?\*/#s', '', $solseo_body );
+
+	foreach ( explode( "\n", $solseo_body ) as $solseo_number => $solseo_line ) {
+		if ( preg_match( '#^\s*(//|\*)#', $solseo_line ) ) {
+			continue;
+		}
+
+		if ( preg_match( '#[\'"][^\'"]*/wp-admin/#', $solseo_line ) ) {
+			$solseo_hardcoded[] = str_replace( SOLSEO_PATH, '', $solseo_admin_file ) . ':' . ( $solseo_number + 1 );
+		}
+	}
+}
+
+solseo_assert_same(
+	array(),
+	$solseo_hardcoded,
+	'nothing in the plugin writes the admin path out, so a moved or nested admin is still covered'
+);
+
+/*
+ * AND THE PATHS THEMSELVES ARE THE SHAPE A ROBOTS LINE NEEDS: a folder with a
+ * trailing slash, and a file without one.
+ */
+list( $solseo_folder, $solseo_ajax ) = Robots_Txt::admin_paths();
+
+solseo_assert_same( '/wp-admin/', $solseo_folder, 'the admin folder comes back as a path with a trailing slash' );
+solseo_assert_same( '/wp-admin/admin-ajax.php', $solseo_ajax, 'and the ajax endpoint as the file itself' );
+
+solseo_assert(
+	false !== strpos( Robots_Tab::presets()['allow_ai']['body'], 'Allow: ' . $solseo_ajax ),
+	'the preset that repeats the admin lines repeats the same two paths'
+);
+
+/*
+ * A WordPress THAT IS NOT WHERE THE DEFAULT SAYS. A site in a subdirectory and
+ * a site whose admin folder has been renamed are both ordinary, and both were
+ * getting a Disallow line for a folder that does not exist and an Allow line
+ * that did not cover admin-ajax.php. These are the two cases that made the
+ * hardcoded path a bug rather than a style point.
+ */
+$solseo_admin_was = isset( $GLOBALS['solseo_test_admin_url'] ) ? $GLOBALS['solseo_test_admin_url'] : null;
+
+$GLOBALS['solseo_test_admin_url'] = 'https://example.test/blog/wp-admin/';
+
+solseo_assert_same(
+	array( '/blog/wp-admin/', '/blog/wp-admin/admin-ajax.php' ),
+	Robots_Txt::admin_paths(),
+	'a WordPress in a subdirectory gets the subdirectory in both paths'
+);
+
+solseo_assert_same(
+	"User-agent: *\nDisallow: /blog/wp-admin/\nAllow: /blog/wp-admin/admin-ajax.php\n",
+	Robots_Txt::wordpress_default(),
+	'and the lines it writes name the folder that is actually there'
+);
+
+$GLOBALS['solseo_test_admin_url'] = 'https://example.test/manage/';
+
+solseo_assert_same(
+	array( '/manage/', '/manage/admin-ajax.php' ),
+	Robots_Txt::admin_paths(),
+	'a moved admin folder is named as it is, not as wp-admin'
+);
+
+/*
+ * AND AN ANSWER NO RULE CAN BE WRITTEN FROM WRITES NO RULE. Disallow with
+ * nothing after it means allow everything, which is wrong but harmless.
+ * Disallow: / would take the whole site out of every index, so the one thing
+ * this must never do on a strange answer is produce a bare slash.
+ */
+$GLOBALS['solseo_test_admin_url'] = 'https://example.test/';
+
+solseo_assert_same(
+	array( '', '' ),
+	Robots_Txt::admin_paths(),
+	'an admin at the site root gives no pair, because the folder would be the whole site'
+);
+
+solseo_assert_same(
+	"User-agent: *\n",
+	Robots_Txt::wordpress_default(),
+	'and the group is written with no admin lines rather than with Disallow: /'
+);
+
+solseo_assert(
+	false === strpos( Robots_Tab::presets()['allow_ai']['body'], 'Disallow: /' . "\n" ),
+	'the preset that repeats those lines leaves them out too, rather than disallowing the site'
+);
+
+if ( null === $solseo_admin_was ) {
+	unset( $GLOBALS['solseo_test_admin_url'] );
+} else {
+	$GLOBALS['solseo_test_admin_url'] = $solseo_admin_was;
+}
+
+solseo_assert_same(
+	"User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n",
+	Robots_Txt::wordpress_default(),
+	'and the ordinary site is back to the lines core writes'
+);

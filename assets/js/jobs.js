@@ -126,8 +126,12 @@
 			 * What a finished run unlocks is decided on the server, because
 			 * that is where it has to be decided. Reloading is how this page
 			 * asks.
+			 *
+			 * Only a run this page watched finish is worth reloading for. The
+			 * state read on load also says 'done', so reloading on that turns
+			 * a finished job into a page that reloads itself forever.
 			 */
-			if ( region.hasAttribute( 'data-solseo-reload' ) ) {
+			if ( region.solseoRan && region.hasAttribute( 'data-solseo-reload' ) ) {
 				window.setTimeout( function () {
 					window.location.reload();
 				}, 1200 );
@@ -216,6 +220,7 @@
 		var id = region.getAttribute( 'data-solseo-job' );
 
 		region.solseoStopping = false;
+		region.solseoRan = true;
 
 		wp.apiFetch( {
 			path: '/solseo/v1/job',

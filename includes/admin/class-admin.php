@@ -39,13 +39,25 @@ class Admin {
 	 * @param string $hook Current admin page.
 	 */
 	public static function assets( $hook ) {
-		$ours = false !== strpos( $hook, 'solseo' ) || in_array( $hook, array( 'post.php', 'post-new.php', 'index.php', 'edit.php', 'term.php' ), true );
+		/*
+		 * REGISTERED EVERYWHERE, ENQUEUED WHERE IT IS NEEDED.
+		 *
+		 * Registering prints nothing and costs an array entry. It is here
+		 * because the add-on and the packs name `solseo-admin` as a dependency
+		 * of their own stylesheets, and WordPress drops an item whose
+		 * dependency is not registered: the moment this stopped enqueueing on
+		 * every screen, a handle that used to exist by accident would have
+		 * stopped existing, and pro.css would have vanished with it rather than
+		 * failing loudly. Registering separates "this file exists" from "this
+		 * screen needs it", which is what the two facts actually are.
+		 */
+		wp_register_style( 'solseo-admin', SOLSEO_URL . 'assets/css/admin.css', array(), SOLSEO_VERSION );
 
-		if ( ! $ours ) {
+		if ( ! self::draws_something( $hook ) ) {
 			return;
 		}
 
-		wp_enqueue_style( 'solseo-admin', SOLSEO_URL . 'assets/css/admin.css', array(), SOLSEO_VERSION );
+		wp_enqueue_style( 'solseo-admin' );
 
 		if ( false !== strpos( $hook, 'solseo' ) ) {
 			self::settings_assets();
@@ -65,6 +77,75 @@ class Admin {
 		 * two surfaces loads is a decision with enough in it to be worth its
 		 * own file.
 		 */
+	}
+
+	/**
+	 * Whether this plugin puts anything on the screen being drawn.
+	 *
+	 * A SCREEN NAME IS NOT A REASON TO LOAD A STYLESHEET. This used to answer
+	 * yes to five screen names outright, so the stylesheet went out on the
+	 * Dashboard of a site whose users had switched every panel off, on the
+	 * posts list of a post type this plugin does not manage, and on the term
+	 * screen of a taxonomy it does not touch. The plugins directory reads that
+	 * as restyling somebody else's admin, and it is the same thing said in
+	 * bytes: a file nobody on that screen has a use for.
+	 *
+	 * So each name is asked the question its own screen can answer. The answer
+	 * is the same one the markup gives: the metabox and the sidebar panel are
+	 * offered on the post types in solseo_post_types(), the SEO column on the
+	 * same list, the term fields on the taxonomies in solseo_taxonomies(), and
+	 * the Dashboard widgets only if at least one of them was registered on this
+	 * request, which is where the capability check already lives.
+	 *
+	 * Takes its facts as arguments so the decision can be tested without a
+	 * WordPress. The caller below is the only thing that gathers them.
+	 *
+	 * @param string $hook   Current admin page.
+	 * @param array  $screen What the screen says it is: post_type, taxonomy,
+	 *                       and widget for a registered dashboard panel.
+	 * @param array  $types  Post types this plugin manages.
+	 * @param array  $taxes  Taxonomies this plugin manages.
+	 * @return bool
+	 */
+	public static function needs_assets( $hook, array $screen, array $types, array $taxes ) {
+		if ( false !== strpos( (string) $hook, 'solseo' ) ) {
+			return true;
+		}
+
+		if ( 'index.php' === $hook ) {
+			return ! empty( $screen['widget'] );
+		}
+
+		if ( in_array( $hook, array( 'post.php', 'post-new.php', 'edit.php' ), true ) ) {
+			return in_array( isset( $screen['post_type'] ) ? $screen['post_type'] : '', $types, true );
+		}
+
+		if ( 'term.php' === $hook ) {
+			return in_array( isset( $screen['taxonomy'] ) ? $screen['taxonomy'] : '', $taxes, true );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Gather what needs_assets() judges, from the screen being drawn.
+	 *
+	 * @param string $hook Current admin page.
+	 * @return bool
+	 */
+	protected static function draws_something( $hook ) {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		return self::needs_assets(
+			$hook,
+			array(
+				'post_type' => is_object( $screen ) && isset( $screen->post_type ) ? (string) $screen->post_type : '',
+				'taxonomy'  => is_object( $screen ) && isset( $screen->taxonomy ) ? (string) $screen->taxonomy : '',
+				'widget'    => Dashboard_Widget::on_dashboard(),
+			),
+			solseo_post_types(),
+			solseo_taxonomies()
+		);
 	}
 
 	/**

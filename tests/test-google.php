@@ -655,6 +655,26 @@ $solseo_page_sent = solseo_test_http_sent();
 
 solseo_assert_same( 2, count( $solseo_page_sent ), 'it takes two calls: the totals and the queries' );
 
+/*
+ * AND THE READ IS ANNOUNCED, ONCE, WITH THE ADDRESS AND THE FIGURES (D-172.4).
+ * The Shop pack's impressions listener waits on this hook. A read that came
+ * from Google fires it; the transient hit below does not, because nothing
+ * new was read.
+ */
+$solseo_announced = solseo_test_actions_fired( 'solseo_gsc_page_read' );
+
+solseo_assert_same( 1, count( $solseo_announced ), 'a page read from Google fires solseo_gsc_page_read once' );
+solseo_assert_same(
+	'https://asiaticbows.com.au/mongolian-bow/',
+	isset( $solseo_announced[0]['args'][0] ) ? $solseo_announced[0]['args'][0] : null,
+	'with the address first'
+);
+solseo_assert_same(
+	41,
+	isset( $solseo_announced[0]['args'][1]['clicks'] ) ? $solseo_announced[0]['args'][1]['clicks'] : null,
+	'and the figures second'
+);
+
 solseo_assert(
 	0 === strpos( $solseo_page_sent[0]['url'], 'https://searchconsole.googleapis.com/webmasters/v3/sites/' ),
 	'and both go to Search Console'
@@ -672,6 +692,7 @@ $solseo_again = Search_Console::page( 'https://asiaticbows.com.au/mongolian-bow/
 
 solseo_assert_same( 41, $solseo_again['clicks'], 'the same page read again gives the same figures' );
 solseo_assert_same( array(), solseo_test_http_sent(), 'and asks Google nothing' );
+solseo_assert_same( 1, count( solseo_test_actions_fired( 'solseo_gsc_page_read' ) ), 'and announces nothing, because nothing was read' );
 
 /* AND AN UNCONNECTED SITE IS TOLD SO RATHER THAN SHOWN ZEROS. */
 Keys::forget( Google::ACCESS );

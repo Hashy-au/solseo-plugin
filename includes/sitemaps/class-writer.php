@@ -157,22 +157,37 @@ class Writer {
 	/**
 	 * The XSL stylesheet that makes a sitemap readable in a browser.
 	 *
+	 * The CSS is a file, named here in a link, and not a style block written
+	 * into this string. Nothing about this document goes through WordPress:
+	 * a browser fetches /sitemap.xsl on its own and applies it to the XML, so
+	 * there is no wp_head to enqueue into and no request of ours to hook. A
+	 * real file is what a static page would use, and it caches.
+	 *
 	 * @return string
 	 */
 	public static function stylesheet() {
 		$title = esc_html__( 'XML sitemap', 'solseo' );
 		$url   = esc_html__( 'Address', 'solseo' );
 		$date  = esc_html__( 'Last changed', 'solseo' );
+		$css   = esc_url( add_query_arg( 'ver', SOLSEO_VERSION, SOLSEO_URL . 'assets/css/sitemap.css' ) );
+
+		/*
+		 * The sniff below is right about every other line in this plugin and
+		 * wrong about this one. Nothing WordPress runs is rendering this: a
+		 * browser fetches /sitemap.xsl on its own and applies it to the sitemap
+		 * XML, so there is no wp_head, no wp_enqueue_scripts and no queue. A
+		 * link to a real file is what a static document uses, and it is what
+		 * replaced the style block the plugins directory asked us to take out.
+		 */
+		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- an XSL transform is not a WordPress page and has nothing to enqueue into.
+		$link = '<link rel="stylesheet" type="text/css" href="' . $css . '"/>';
 
 		return '<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:s="http://www.sitemaps.org/schemas/sitemap/0.9">
 <xsl:output method="html" encoding="UTF-8" indent="yes"/>
 <xsl:template match="/">
 <html><head><title>' . $title . '</title>
-<style>body{font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;margin:2rem;color:#23262E}
-h1{font-size:1.3rem;margin:0 0 1rem}table{border-collapse:collapse;width:100%}
-th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid #EAE1D2;font-size:.9rem}
-th{color:#6B6659;font-weight:600}a{color:#0C5B9C}</style></head>
+' . $link . '</head>
 <body><h1>' . $title . '</h1>
 <table><tr><th>' . $url . '</th><th>' . $date . '</th></tr>
 <xsl:for-each select="s:sitemapindex/s:sitemap"><tr>

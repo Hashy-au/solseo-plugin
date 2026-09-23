@@ -70,6 +70,22 @@ class Client {
 	}
 
 	/**
+	 * What the service already measured about this site from outside it.
+	 *
+	 * Nothing here is measured on the call: the hub answers with its last
+	 * probe, so drawing the panel opens no connection to the site being
+	 * described. An account with no monitoring answers watched false, which is
+	 * an answer and not an error.
+	 *
+	 * @return array|null Null when the service does not answer with one.
+	 */
+	public static function monitor() {
+		$response = self::request( 'GET', '/api/v1/plugin/monitor' );
+
+		return is_wp_error( $response ) ? null : $response;
+	}
+
+	/**
 	 * The address of the service.
 	 *
 	 * @return string

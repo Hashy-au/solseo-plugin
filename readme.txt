@@ -4,7 +4,7 @@ Tags: seo, sitemap, schema, redirects, meta
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,8 @@ Product schema, product checks in the score, galleries in the sitemap, and price
 SolSEO does not contact anybody else on its own. Every service below is off until you switch it on yourself, and each one stops the moment you remove the key that turned it on. This is the whole list.
 
 Two things in this plugin ask your own server for your own pages, and neither is one of these. The crawler on the Technical screen reads your published pages when you press the button, and the tag check on the Connections screen reads your home page when you press that button. Both go through the same piece of code, which refuses any address that is not on your own site. Nothing about those pages leaves your server, so there is no third party to name here.
+
+Some screens also carry a link to somebody else's documentation, and a link is not a service. The robots.txt screen lists the AI crawlers by name and links each one to what its operator publishes about it, at OpenAI, Anthropic, Google, Common Crawl, Perplexity, ByteDance, Apple, Meta and Amazon. The Connections screen links Google's pages about API keys, the analytics check links each tag vendor's own installation guide, and the Australian checks link the OAIC, the ACCC and the ATO. Nothing is fetched from any of them: the addresses sit in a href and go nowhere until you click one, at which point your browser goes there and this plugin is not involved. They are here so that what a screen tells you about a crawler or a rule can be checked against the people who set it.
 
 = Google PageSpeed Insights, at www.googleapis.com =
 
@@ -174,6 +176,98 @@ Not unless you ask it to, under SolSEO, Tools, Data.
 
 == Changelog ==
 
+= 2.3.2 =
+The home page no longer points at a breadcrumb trail it does not have. A trail
+needs two crumbs and the front page has one, so no BreadcrumbList was written
+there, but the WebPage node still named "#breadcrumb" as its breadcrumb. Google
+reads a reference to an id nothing else carries as an empty BreadcrumbList, and
+Search Console reported the home page as missing itemListElement. The page node
+now names a breadcrumb only when the list is in the same graph. Every other
+page is unchanged.
+
+= 2.3.1 =
+
+The WooCommerce shop page prints the title and description typed on it. The
+shop is drawn at the address of a real page, and that page has the SolSEO
+meta box, but the query calls the view an archive, so what was typed there was
+never read and the shop showed "Shop - Sitename" whatever the editor said. The
+shop archive now carries its page, the way the blog home already carried its,
+so title, description, robots and social tags all come from the page. Every
+other archive is unchanged.
+
+= 2.3.0 =
+A page title can no longer break the structured data. The JSON-LD block was
+written with forward slashes left unescaped, so a title, description or product
+field holding the six characters of a closing script tag ended the block early
+and everything after it in that field went onto the page as markup. The graph is
+now written so that neither half of a tag can appear in it. Nothing is deleted:
+the words a person typed are still in the graph, and a search engine reads the
+same page it always did.
+
+The admin stylesheet no longer reaches WordPress' own screens. Its colours were
+declared on the document, so every screen that loaded it handed nine SolSEO
+values to everything else drawn there, and it loaded on the Dashboard, the posts
+list, the editor and the term screen whether or not there was anything of ours
+on them. The colours are now declared on this plugin's own elements, and the
+stylesheet loads on a screen only when this plugin has drawn something on it:
+the Dashboard only with one of its panels turned on, a posts list only for a
+post type it manages, a term screen only for a taxonomy it manages.
+
+The robots.txt rules ask WordPress where the admin is instead of assuming. A
+site in a subdirectory, or one whose admin folder has been moved, was getting a
+rule for a folder that does not exist and an Allow line that did not cover
+admin-ajax.php. Both lines now come from the address WordPress reports.
+
+The sitemap stylesheet is a file. It used to be written into the transform,
+which meant a browser fetched it again with every sitemap it drew.
+
+Four links that had gone dead now point at pages that exist: ByteDance's own
+page about its crawler, Hotjar's tracking code guide, the ATO on tax invoices,
+and two ACCC pages behind the Australian checks. The readme also now says, in
+the External services section, that the crawler and compliance tables carry
+links to other people's documentation and that this plugin fetches none of them.
+
+= 2.2.0 =
+The score in the editor now matches the audit. The editor analysis and the
+checks that run on the SolSEO service had each grown their own copy of the same
+rules and drifted apart, so a description could be written at a length the
+editor accepted and then reported as too long by the same company's check. The
+alt text rule in the accessibility panel and the one in the SEO panel disagreed
+with each other in the same editor. All of them now read one definition.
+
+An empty alt attribute is read as an answer rather than as a missing one. A
+decorative image is meant to carry an empty alt, and pages were being marked
+down for doing it correctly.
+
+= 2.1.0 =
+The dashboard widget is about this site and nothing else. It used to list every
+site on the connected SolSEO account, so a site built for a client showed that
+client the names and scores of every other site on the account. It now shows
+this one.
+
+The panel's five sections are now also panels of their own: content score, what
+needs work, site health and keywords, site monitoring, and pages worth fixing.
+They start switched off. The Screen Options tab at the top of the Dashboard
+turns any of them on, for you and not for everybody else on the site.
+
+The widget also says a good deal more: how the pages are spread across the
+score bands, how many have never been scored, how many have no search summary,
+how many are hidden from search, and anything switched on that stops the site
+being found at all. A connected site adds its health score and the change since
+the audit before, its tracked keyword count, when it was last audited, and,
+where monitoring is on, whether the site is answering, how long the certificate
+has left and whether the sitemap works.
+
+= 2.0.2 =
+Switching off the other SEO plugin after an import now switches off its paid
+add-on at the same time. Before this, only the free plugin went off and the
+add-on kept running with nothing underneath it, which took the whole site down
+until somebody switched the first one back on.
+
+The import screen also stops reloading itself. A finished run reloaded the page
+once to show what it had unlocked, then the reloaded page saw the same finished
+run and reloaded again, over and over.
+
 = 2.0.0 =
 Connect your Google Search Console account and see what each page actually did
 in Google over the last twenty eight days, in the editor, beside the page you
@@ -181,6 +275,14 @@ are writing: clicks, impressions, average position, and the searches that
 brought them. The permission asked for is read only. If you would rather
 solseo.com.au were not in the middle of the connection, paste a client id and
 secret from your own Google Cloud project and it will not be.
+
+A product page no longer carries two Product descriptions. When SolSEO's
+structured data is on and it describes the product, WooCommerce's own copy is
+left out, so a search engine sees one product with one rating. A filter,
+solseo_schema_replace_woo, keeps WooCommerce's instead. When another SEO plugin
+is also publishing structured data, the Titles and Meta screen says so in one
+line and asks you to turn one of them off. Add-ons can now hear when a page's
+Search Console figures have been read.
 
 = 1.5.0 =
 The free halves of six paid features: internal link suggestions you approve one

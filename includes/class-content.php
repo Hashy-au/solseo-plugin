@@ -203,10 +203,24 @@ class Content {
 		foreach ( $matches[0] as $tag ) {
 			preg_match( '#src=["\']([^"\']*)["\']#i', $tag, $src );
 			preg_match( '#alt=["\']([^"\']*)["\']#i', $tag, $alt );
+			preg_match( '#role=["\']([^"\']*)["\']#i', $tag, $role );
+			preg_match( '#aria-hidden=["\']([^"\']*)["\']#i', $tag, $hidden );
+
+			$role_value = isset( $role[1] ) ? strtolower( trim( $role[1] ) ) : '';
 
 			$images[] = array(
-				'src' => isset( $src[1] ) ? $src[1] : '',
-				'alt' => isset( $alt[1] ) ? self::plain( $alt[1] ) : '',
+
+				/*
+				 * NULL WHEN THE ATTRIBUTE IS ABSENT, '' WHEN IT IS EMPTY, and
+				 * the difference is the whole point. This used to collapse both
+				 * to '', so nothing downstream could tell an image nobody
+				 * described from one deliberately marked as decoration. See
+				 * Contract::alt_is_missing() and D-207.2.
+				 */
+				'src'            => isset( $src[1] ) ? $src[1] : '',
+				'alt'            => isset( $alt[1] ) ? self::plain( $alt[1] ) : null,
+				'aria_hidden'    => isset( $hidden[1] ) && 'true' === strtolower( trim( $hidden[1] ) ),
+				'presentational' => 'presentation' === $role_value || 'none' === $role_value,
 			);
 		}
 

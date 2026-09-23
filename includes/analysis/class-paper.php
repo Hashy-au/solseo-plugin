@@ -132,11 +132,25 @@ class Paper {
 		$paper['is_product'] = 'product' === $paper['post_type'] && solseo_has_woocommerce();
 
 		if ( $paper['thumbnail'] ) {
+			/*
+			 * NULL WHEN THE META IS EMPTY, not ''.
+			 *
+			 * In markup, alt="" is a statement that the image is decoration, and
+			 * Contract::alt_is_missing() respects it (D-207.2). There is no such
+			 * statement here: attachment meta stores "nobody wrote one" and
+			 * "somebody saved an empty one" as the same empty string, and a
+			 * featured image is never decoration anyway, so an empty value means
+			 * the alt text has not been written. Passing '' would have quietly
+			 * downgraded every featured image with no alt from a fault to a
+			 * note, which is the opposite of what this round is for.
+			 */
+			$thumbnail_alt = trim( (string) get_post_meta( $paper['thumbnail'], '_wp_attachment_image_alt', true ) );
+
 			array_unshift(
 				$paper['images'],
 				array(
 					'src' => (string) wp_get_attachment_image_url( $paper['thumbnail'], 'full' ),
-					'alt' => (string) get_post_meta( $paper['thumbnail'], '_wp_attachment_image_alt', true ),
+					'alt' => '' === $thumbnail_alt ? null : $thumbnail_alt,
 				)
 			);
 		}
