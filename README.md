@@ -41,7 +41,7 @@ WordPress 6.4 or later, PHP 7.4 or later.
 
 ## Download
 
-**[solseo-2.3.2.zip](https://github.com/Hashy-au/solseo-plugin/releases/download/v2.3.2/solseo-2.3.2.zip)**
+**[solseo-2.3.3.zip](https://github.com/Hashy-au/solseo-plugin/releases/download/v2.3.2/solseo-2.3.3.zip)**
 
 In WordPress, go to Plugins, Add New, Upload Plugin, choose the file and
 activate it. It works from the moment it is switched on, with no setup.

@@ -3,7 +3,7 @@
  * Plugin Name:       SolSEO
  * Plugin URI:        https://solseo.com.au/plugin
  * Description:       Titles, meta, sitemaps, structured data, redirects and a content score for posts, pages and products.
- * Version:           2.3.2
+ * Version:           2.3.3
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Solkarra Group
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SOLSEO_VERSION', '2.3.2' );
+define( 'SOLSEO_VERSION', '2.3.3' );
 define( 'SOLSEO_FILE', __FILE__ );
 define( 'SOLSEO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SOLSEO_URL', plugin_dir_url( __FILE__ ) );

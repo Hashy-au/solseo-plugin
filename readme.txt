@@ -4,7 +4,7 @@ Tags: seo, sitemap, schema, redirects, meta
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -176,7 +176,19 @@ Not unless you ask it to, under SolSEO, Tools, Data.
 
 == Changelog ==
 
+= 2.3.3 =
+No node in the structured data can point at a node that is not there. 2.3.2
+fixed the one case Search Console had reported, the home page naming a
+breadcrumb list it did not have. This release makes the rule general: after
+every builder and every filter has run, any reference to an id that no node in
+the graph carries is removed. An author reference to a person who has since
+been deleted, or a reference left behind by an add-on that replaced a node,
+can no longer reach the page as an empty item that Google reports as a missing
+field. Pages whose references all resolve, which is every page on a normal
+site, print exactly what they printed before.
+
 = 2.3.2 =
+
 The home page no longer points at a breadcrumb trail it does not have. A trail
 needs two crumbs and the front page has one, so no BreadcrumbList was written
 there, but the WebPage node still named "#breadcrumb" as its breadcrumb. Google

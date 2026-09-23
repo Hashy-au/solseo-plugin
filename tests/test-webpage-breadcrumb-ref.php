@@ -93,3 +93,87 @@ solseo_assert( ! isset( $page_nodes[0]['breadcrumb'] ), 'and no WebPage referenc
 Options::update( array( 'breadcrumbs_enabled' => true ) );
 $GLOBALS['solseo_test_view'] = 'other';
 Context::reset();
+
+/*
+ * The general rule behind the breadcrumb case: no node may point at an id
+ * that is not in the graph. Schema::prune_references() is the last word,
+ * after every builder and every filter, and it is a pure function.
+ */
+$solseo_graph = array(
+	array(
+		'@type' => 'Organization',
+		'@id'   => 'https://example.test/#publisher',
+		'name'  => 'Example',
+		'logo'  => array(
+			'@type' => 'ImageObject',
+			'@id'   => 'https://example.test/#logo',
+			'url'   => 'https://example.test/logo.png',
+		),
+		'image' => array( '@id' => 'https://example.test/#logo' ),
+	),
+	array(
+		'@type'      => 'WebPage',
+		'@id'        => 'https://example.test/post/#webpage',
+		'isPartOf'   => array( '@id' => 'https://example.test/#website' ),
+		'breadcrumb' => array( '@id' => 'https://example.test/post/#breadcrumb' ),
+	),
+	array(
+		'@type'            => 'Article',
+		'@id'              => 'https://example.test/post/#article',
+		'headline'         => 'A post',
+		'publisher'        => array( '@id' => 'https://example.test/#publisher' ),
+		'author'           => array( '@id' => 'https://example.test/#/schema/person/9' ),
+		'mainEntityOfPage' => array( '@id' => 'https://example.test/post/#webpage' ),
+		'mentions'         => array(
+			array( '@id' => 'https://example.test/#publisher' ),
+			array( '@id' => 'https://example.test/#nobody' ),
+		),
+		'about'            => array(
+			array( '@id' => 'https://example.test/#nobody' ),
+		),
+	),
+);
+
+$solseo_pruned = Schema::prune_references( $solseo_graph );
+
+solseo_assert( ! isset( $solseo_pruned[1]['breadcrumb'] ), 'A breadcrumb reference with no BreadcrumbList behind it is dropped' );
+solseo_assert( ! isset( $solseo_pruned[1]['isPartOf'] ), 'so is a WebSite reference when no WebSite node is in the graph' );
+solseo_assert( ! isset( $solseo_pruned[2]['author'] ), 'and an author reference to a person who is not in the graph' );
+solseo_assert( isset( $solseo_pruned[2]['publisher']['@id'] ), 'A reference to a node that is there is kept' );
+solseo_assert( isset( $solseo_pruned[2]['mainEntityOfPage']['@id'] ), 'including one to the WebPage' );
+solseo_assert( isset( $solseo_pruned[0]['image']['@id'] ), 'and one to a node nested inside another node, such as the logo' );
+solseo_assert_same( array( array( '@id' => 'https://example.test/#publisher' ) ), array_values( $solseo_pruned[2]['mentions'] ), 'A list of references keeps the kept ones and loses the rest' );
+solseo_assert( ! isset( $solseo_pruned[2]['about'] ), 'A list that loses every reference goes with them' );
+solseo_assert_same( 'A post', $solseo_pruned[2]['headline'], 'Plain fields are untouched' );
+solseo_assert_same( $solseo_pruned[0]['logo'], $solseo_graph[0]['logo'], 'A nested node with fields of its own is not a reference and is untouched' );
+solseo_assert_same( array(), Schema::prune_references( array() ), 'An empty graph stays empty' );
+
+/*
+ * The rule holds through the filter. A filter that removes the
+ * BreadcrumbList, as an add-on replacing nodes might, leaves no reference
+ * behind either.
+ */
+Options::update( array( 'breadcrumbs_enabled' => true ) );
+$solseo_drop_trail = function ( $graph ) {
+	return array_values(
+		array_filter(
+			$graph,
+			function ( $node ) {
+				return ! ( is_array( $node ) && isset( $node['@type'] ) && 'BreadcrumbList' === $node['@type'] );
+			}
+		)
+	);
+};
+add_filter( 'solseo_schema_graph', $solseo_drop_trail );
+$GLOBALS['solseo_test_view'] = 'shop';
+Context::reset();
+$graph      = Schema::graph();
+$page_nodes = solseo_test_nodes_of( $graph, 'WebPage' );
+
+solseo_assert( empty( solseo_test_nodes_of( $graph, 'BreadcrumbList' ) ), 'A filter removed the BreadcrumbList' );
+solseo_assert( ! isset( $page_nodes[0]['breadcrumb'] ), 'and the WebPage no longer points at it' );
+solseo_assert( isset( $page_nodes[0]['isPartOf']['@id'] ), 'while its reference to the WebSite, which is still there, is kept' );
+
+remove_all_filters( 'solseo_schema_graph' );
+$GLOBALS['solseo_test_view'] = 'other';
+Context::reset();

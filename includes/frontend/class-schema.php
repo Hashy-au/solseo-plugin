@@ -243,7 +243,112 @@ class Schema {
 		 * @param array $graph   Nodes.
 		 * @param array $context View context.
 		 */
-		return apply_filters( 'solseo_schema_graph', array_filter( $graph ), $context );
+		$graph = (array) apply_filters( 'solseo_schema_graph', array_filter( $graph ), $context );
+
+		return self::prune_references( $graph );
+	}
+
+	/**
+	 * Drop every reference to a node that is not in the graph.
+	 *
+	 * A property holding nothing but an `@id` is a promise that a node with
+	 * that id is somewhere in the same graph. Google resolves a promise nobody
+	 * kept as an empty node of the property's expected type, and Search
+	 * Console then reports the page for a missing field: "Missing field
+	 * itemListElement" for a breadcrumb reference on a page with no trail,
+	 * "Missing field name" for an author reference to a person who has since
+	 * been deleted. Each builder is careful on its own, but a filter can
+	 * remove a node another builder points at, so the last word is here,
+	 * after the filter has run: every reference that survives has its node.
+	 *
+	 * Pure: no WordPress, no state. The unit test calls it directly.
+	 *
+	 * @param array $graph Nodes, after the filter.
+	 * @return array The same nodes with unkept references removed.
+	 */
+	public static function prune_references( array $graph ) {
+		$ids = array();
+
+		foreach ( $graph as $node ) {
+			self::collect_ids( $node, $ids );
+		}
+
+		foreach ( $graph as $index => $node ) {
+			if ( is_array( $node ) ) {
+				$graph[ $index ] = self::drop_unkept( $node, $ids );
+			}
+		}
+
+		return $graph;
+	}
+
+	/**
+	 * Every `@id` that a node, or anything nested in it, declares.
+	 *
+	 * A nested object that carries an `@id` beside other fields is a node in
+	 * its own right (the publisher's logo is one), so a reference to it is
+	 * kept.
+	 *
+	 * @param mixed $value Node or property value.
+	 * @param array $ids   Ids found so far, as keys.
+	 * @return void
+	 */
+	protected static function collect_ids( $value, array &$ids ) {
+		if ( ! is_array( $value ) ) {
+			return;
+		}
+
+		if ( isset( $value['@id'] ) && is_string( $value['@id'] ) && ! self::is_reference( $value ) ) {
+			$ids[ $value['@id'] ] = true;
+		}
+
+		foreach ( $value as $child ) {
+			self::collect_ids( $child, $ids );
+		}
+	}
+
+	/**
+	 * A node with every reference to a missing id removed, at any depth.
+	 *
+	 * @param array $node Node.
+	 * @param array $ids  Ids declared in the graph, as keys.
+	 * @return array
+	 */
+	protected static function drop_unkept( array $node, array $ids ) {
+		foreach ( $node as $key => $value ) {
+			if ( ! is_array( $value ) ) {
+				continue;
+			}
+
+			if ( self::is_reference( $value ) ) {
+				if ( ! isset( $ids[ $value['@id'] ] ) ) {
+					unset( $node[ $key ] );
+				}
+				continue;
+			}
+
+			$node[ $key ] = self::drop_unkept( $value, $ids );
+
+			// A list of references that lost every entry says nothing.
+			if ( array() === $node[ $key ] && array() !== $value ) {
+				unset( $node[ $key ] );
+			}
+		}
+
+		return $node;
+	}
+
+	/**
+	 * Whether a value is a bare reference: an object holding only an `@id`.
+	 *
+	 * @param mixed $value Property value.
+	 * @return bool
+	 */
+	protected static function is_reference( $value ) {
+		return is_array( $value )
+			&& 1 === count( $value )
+			&& isset( $value['@id'] )
+			&& is_string( $value['@id'] );
 	}
 
 	/**
